@@ -127,3 +127,117 @@ int retiraDeBloqueado() {
 	return -1;
 }
 
+// ----------------------------------------------------------------------------------- //
+
+_Bool executandoLivre() {
+	if (FirstFila2(__executando) != 0) {
+		return 1;
+	}
+
+	return 0;
+}
+
+// ----------------------------------------------------------------------------------- //
+
+void buscaThread(int tid, TCB_t *thread) {
+	// procura em executando
+	int estado_iterador;
+	TCB_t *tcb_temp;
+	estado_iterador = FirstFila2(__executando);
+	if (estado_iterador == 0) {
+		tcb_temp = GetAtIteratorFila2(__executando);
+		if (tcb_temp->tid == tid) {
+			thread = tcb_temp;
+			return;
+		}
+	}
+
+	estado_iterador = FirstFila2(__bloqueados);
+	if (estado_iterador == 0) {
+		tcb_temp = GetAtIteratorFila2(__bloqueados);
+		if (tcb_temp->tid == tid) {
+			thread = tcb_temp;
+			return;
+		}
+	}
+
+	estado_iterador = FirstFila2(__aptos_prio_0);
+	if (estado_iterador == 0) {
+		tcb_temp = GetAtIteratorFila2(__aptos_prio_0);
+		if (tcb_temp->tid == tid) {
+			thread = tcb_temp;
+			return;
+		}
+	}
+
+	estado_iterador = FirstFila2(__aptos_prio_1);
+	if (estado_iterador == 0) {
+		tcb_temp = GetAtIteratorFila2(__aptos_prio_1);
+		if (tcb_temp->tid == tid) {
+			thread = tcb_temp;
+			return;
+		}
+	}
+
+	estado_iterador = FirstFila2(__aptos_prio_2);
+	if (estado_iterador == 0) {
+		tcb_temp = GetAtIteratorFila2(__aptos_prio_2);
+		if (tcb_temp->tid == tid) {
+			thread = tcb_temp;
+			return;
+		}
+	}
+}
+
+// ----------------------------------------------------------------------------------- //
+
+int atualizaPrioridade(int tid, int nova_prio) {
+	int estado_iterador;
+	TCB_t *tcb_temp;
+	estado_iterador = FirstFila2(__executando);
+	if (estado_iterador == 0) {
+		tcb_temp = GetAtIteratorFila2(__executando);
+		if (tcb_temp->tid == tid) {
+			tcb_temp->prio = nova_prio;
+			return 0;
+		}
+	}
+
+	estado_iterador = FirstFila2(__bloqueados);
+	if (estado_iterador == 0) {
+		tcb_temp = GetAtIteratorFila2(__bloqueados);
+		if (tcb_temp->tid == tid) {
+			tcb_temp->prio = nova_prio;
+			return 0;
+		}
+	}
+
+	estado_iterador = FirstFila2(__aptos_prio_0);
+	if (estado_iterador == 0) {
+		tcb_temp = GetAtIteratorFila2(__aptos_prio_0);
+		if (tcb_temp->tid == tid) {
+			tcb_temp->prio = nova_prio;
+			return 0;
+		}
+	}
+
+	estado_iterador = FirstFila2(__aptos_prio_1);
+	if (estado_iterador == 0) {
+		tcb_temp = GetAtIteratorFila2(__aptos_prio_1);
+		if (tcb_temp->tid == tid) {
+			tcb_temp->prio = nova_prio;
+			return 0;
+		}
+	}
+
+	estado_iterador = FirstFila2(__aptos_prio_2);
+	if (estado_iterador == 0) {
+		tcb_temp = GetAtIteratorFila2(__aptos_prio_2);
+		if (tcb_temp->tid == tid) {
+			tcb_temp->prio = nova_prio;
+			return 0;
+		}
+	}
+
+	return -1;
+}

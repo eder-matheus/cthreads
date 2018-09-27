@@ -14,3 +14,15 @@ int insereEmApto(TCB_t *thread);
 int insereEmExecutando(TCB_t *thread);
 
 int insereEmBloqueado(TCB_t *thread);
+
+int retiraDeExecutando();
+
+int retiraDeApto();
+
+int retiraDeBloqueado();
+
+_Bool executandoLivre();
+
+void buscaThread(int tid, TCB_t *thread);
+
+int atualizaPrioridade(int tid, int nova_prio);

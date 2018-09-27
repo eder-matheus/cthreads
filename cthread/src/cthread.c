@@ -3,6 +3,7 @@
 #include "../include/support.h"
 #include "../include/cthread.h"
 #include "../include/cdata.h"
+#include "ucontext.h"
 #include "../src/escalonador.c"
 
 
@@ -11,14 +12,29 @@ int ccreate (void* (*start)(void*), void *arg, int prio) {
 		return -1;
 	}
 
-	int i = 0;
-	i = inicializaFilas();
-	return i;
+	static ucontext_t contexto;
+	char stack[16384];
+
+	if (getcontext(&contexto) == -1) {
+		printf("getcontext falhou\n");
+	}
+
+	contexto.uc_stack.ss_sp = stack;
+	contexto.uc_stack.ss_size = sizeof(stack);
+	contexto.uc_link = &contexto;
+	//makecontext(&contexto, (start), 0);
+
+	struct TCB_t *tcb;
+	
+	
+	return 0;
 }
 
 int csetprio(int tid, int prio) {
+	int success;
 
-	return -1;
+	success = atualizaPrioridade(tid, prio);
+	return success;
 }
 
 int cyield(void) {
