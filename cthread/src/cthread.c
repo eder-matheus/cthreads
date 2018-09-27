@@ -6,6 +6,12 @@
 #include "ucontext.h"
 #include "../src/escalonador.c"
 
+// static void trampoline(int cb, int arg)
+// {
+// 	void *(*real_cb)(void *) = (void *(*)(void *)) cb;
+// 	void *real_arg = arg;
+// 	real_cb(real_arg);
+// }
 
 int ccreate (void* (*start)(void*), void *arg, int prio) {
 	if (prio < 0 || prio > 2) {
@@ -22,7 +28,7 @@ int ccreate (void* (*start)(void*), void *arg, int prio) {
 	contexto.uc_stack.ss_sp = stack;
 	contexto.uc_stack.ss_size = sizeof(stack);
 	contexto.uc_link = &contexto;
-	//makecontext(&contexto, (start), 0);
+	//makecontext(&contexto, trampoline, 2, (int) start, (int) arg);
 
 	struct TCB_t *tcb;
 	
@@ -31,10 +37,31 @@ int ccreate (void* (*start)(void*), void *arg, int prio) {
 }
 
 int csetprio(int tid, int prio) {
-	int success;
+	TCB_t *thread, *emExecucao;
+	_Bool erro = 1;
+	_Bool emApto = -1;
+	int i;
+	int prioAnterior;
 
-	success = atualizaPrioridade(tid, prio);
-	return success;
+	thread = buscaThread(tid, &erro, &emApto);
+	prioAnterior = thread->prio;
+
+	if (!erro) {
+		thread->prio = prio; // nova prioridade definida
+		i = FirstFila2(__executando);
+		emExecucao = GetAtIteratorFila2(__executando);
+		if (thread->prio > emExecucao->prio) {
+			// retira "emExecucao" do exec, e coloca a thread
+
+		} else if(prioAnterior != thread->prio && emApto != -1) {
+			// move a thread para a fila de aptos de acordo com a prioridade, caso nao esteja no bloqueado
+			if
+		}
+	} else {
+		return -1;
+	}
+
+	return 0;
 }
 
 int cyield(void) {

@@ -51,7 +51,7 @@ int insereEmBloqueado(TCB_t *thread) {
 
 // ----------------------------------------------------------------------------------- //
 
-int retiraDeExecutando() {
+int removeDeExecutando() {
 	int estado_executando;
 	int estado_iterador;
 
@@ -69,7 +69,7 @@ int retiraDeExecutando() {
 
 // ----------------------------------------------------------------------------------- //
 
-int retiraDeApto() {
+int removeDeApto() {
 	int estado_apto;
 	int estado_iterador;
 
@@ -111,7 +111,7 @@ int retiraDeApto() {
 
 // ----------------------------------------------------------------------------------- //
 
-int retiraDeBloqueado() {
+int removeDeBloqueado() {
 	int estado_bloqueado;
 	int estado_iterador;
 
@@ -129,6 +129,37 @@ int retiraDeBloqueado() {
 
 // ----------------------------------------------------------------------------------- //
 
+int alternaEntreAptos(TCB_t *thread, int prioAntiga) {
+	if (prioAntiga == 0) {
+		int i = FirstFila2(__aptos_prio_0);
+		_Bool encontrou = 0;
+		TCB_t *threadAtual;
+		while (!encontrou) {
+			threadAtual = GetAtIteratorFila2(__aptos_prio_0);
+			if (thread->tid == threadAtual->tid) {
+				encontrou = 1;
+			} else {
+				i = NextFila2(__aptos_prio_0);
+			}
+		}
+	} else if (prioAntiga == 1) {
+		_Bool encontrou = 0;
+		while (!encontrou) {
+			
+		}
+	} else if (prioAntiga == 2) {
+		_Bool encontrou = 0;
+		while (!encontrou) {
+			
+		}
+	} else {
+		return -1;
+	}
+
+}
+
+// ----------------------------------------------------------------------------------- //
+
 _Bool executandoLivre() {
 	if (FirstFila2(__executando) != 0) {
 		return 1;
@@ -139,16 +170,19 @@ _Bool executandoLivre() {
 
 // ----------------------------------------------------------------------------------- //
 
-void buscaThread(int tid, TCB_t *thread) {
+TCB_t* buscaThread(int tid, _Bool *erro, int *emApto) {
 	// procura em executando
 	int estado_iterador;
 	TCB_t *tcb_temp;
+
+	*erro = 0;
+	*emApto = -1;
+
 	estado_iterador = FirstFila2(__executando);
 	if (estado_iterador == 0) {
 		tcb_temp = GetAtIteratorFila2(__executando);
 		if (tcb_temp->tid == tid) {
-			thread = tcb_temp;
-			return;
+			return tcb_temp;
 		}
 	}
 
@@ -156,8 +190,7 @@ void buscaThread(int tid, TCB_t *thread) {
 	if (estado_iterador == 0) {
 		tcb_temp = GetAtIteratorFila2(__bloqueados);
 		if (tcb_temp->tid == tid) {
-			thread = tcb_temp;
-			return;
+			return tcb_temp;
 		}
 	}
 
@@ -165,8 +198,8 @@ void buscaThread(int tid, TCB_t *thread) {
 	if (estado_iterador == 0) {
 		tcb_temp = GetAtIteratorFila2(__aptos_prio_0);
 		if (tcb_temp->tid == tid) {
-			thread = tcb_temp;
-			return;
+			*emApto = 0;
+			return tcb_temp;
 		}
 	}
 
@@ -174,8 +207,8 @@ void buscaThread(int tid, TCB_t *thread) {
 	if (estado_iterador == 0) {
 		tcb_temp = GetAtIteratorFila2(__aptos_prio_1);
 		if (tcb_temp->tid == tid) {
-			thread = tcb_temp;
-			return;
+			*emApto = 1;
+			return tcb_temp;
 		}
 	}
 
@@ -183,10 +216,12 @@ void buscaThread(int tid, TCB_t *thread) {
 	if (estado_iterador == 0) {
 		tcb_temp = GetAtIteratorFila2(__aptos_prio_2);
 		if (tcb_temp->tid == tid) {
-			thread = tcb_temp;
-			return;
+			*emApto = 2;
+			return tcb_temp;
 		}
 	}
+
+	*erro = 1;
 }
 
 // ----------------------------------------------------------------------------------- //
