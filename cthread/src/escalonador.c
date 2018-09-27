@@ -1,5 +1,13 @@
 #include "../include/escalonador.h"
+#include "../include/support.h"
 
-sFila2 *aptos;
-sFila2 *executando;
-sFila2 *bloqueados;
+int inicializaFilas() {
+	int retorno = 0;
+	retorno += CreateFila2(__aptos_prio_0);
+	retorno += CreateFila2(__aptos_prio_1);
+	retorno += CreateFila2(__aptos_prio_2);
+	retorno += CreateFila2(__executando);
+	retorno += CreateFila2(__bloqueados);
+
+	return retorno;
+}
