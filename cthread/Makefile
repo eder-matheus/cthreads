@@ -19,13 +19,13 @@ SRC_DIR=./src
 all: regra1 regra2 regran
 
 regra1: #dependências para a regra1
-	$(CC) -o $(BIN_DIR)regra1 $(SRC_DIR)regra1.c -Wall
+	$(CC) -o $(BIN_DIR)/regra1 $(SRC_DIR)/regra1.c -Wall -m32
 
 regra2: #dependências para a regra2
-	$(CC) -o $(BIN_DIR)regra2 $(SRC_DIR)regra2.c -Wall
+	$(CC) -o $(BIN_DIR)/regra2 $(SRC_DIR)/regra2.c -Wall -m32
 
 regran: #dependências para a regran
-	$(CC) -o $(BIN_DIR)regran $(SRC_DIR)regran.c -Wall
+	$(CC) -o $(BIN_DIR)/regran $(SRC_DIR)/regran.c -Wall -m32
 
 clean:
 	rm -rf $(LIB_DIR)/*.a $(BIN_DIR)/*.o $(SRC_DIR)/*~ $(INC_DIR)/*~ *~
