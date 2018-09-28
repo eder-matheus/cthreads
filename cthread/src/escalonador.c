@@ -62,6 +62,7 @@ int removeDeExecutando() {
 
 	if (estado_executando != DELITER_VAZIA) {
 		printf ("Erro ao retirar de executando: fila nao esta vazia\n");
+		return -1;
 	}
 
 	return 0;
@@ -129,11 +130,16 @@ int removeDeBloqueado() {
 
 // ----------------------------------------------------------------------------------- //
 
-int alternaEntreAptos(TCB_t *thread, int prioAntiga) {
-	if (prioAntiga == 0) {
+int alternaEntreAptos(TCB_t *thread, int prioAnterior) {
+	int success;
+	int remove;
+
+	// Encontra a thread na sua fila atual
+	if (prioAnterior == 0) {
 		int i = FirstFila2(__aptos_prio_0);
 		_Bool encontrou = 0;
 		TCB_t *threadAtual;
+
 		while (!encontrou) {
 			threadAtual = GetAtIteratorFila2(__aptos_prio_0);
 			if (thread->tid == threadAtual->tid) {
@@ -142,20 +148,51 @@ int alternaEntreAptos(TCB_t *thread, int prioAntiga) {
 				i = NextFila2(__aptos_prio_0);
 			}
 		}
-	} else if (prioAntiga == 1) {
+	} else if (prioAnterior == 1) {
+		int i = FirstFila2(__aptos_prio_1);
 		_Bool encontrou = 0;
+		TCB_t *threadAtual;
+		
 		while (!encontrou) {
-			
+			threadAtual = GetAtIteratorFila2(__aptos_prio_1);
+			if (thread->tid == threadAtual->tid) {
+				encontrou = 1;
+			} else {
+				i = NextFila2(__aptos_prio_1);
+			}
 		}
-	} else if (prioAntiga == 2) {
+	} else if (prioAnterior == 2) {
+		int i = FirstFila2(__aptos_prio_2);
 		_Bool encontrou = 0;
+		TCB_t *threadAtual;
+		
 		while (!encontrou) {
-			
+			threadAtual = GetAtIteratorFila2(__aptos_prio_2);
+			if (thread->tid == threadAtual->tid) {
+				encontrou = 1;
+			} else {
+				i = NextFila2(__aptos_prio_2);
+			}
 		}
 	} else {
 		return -1;
 	}
+	// Aqui, a thread a ser movida entre as filas já foi encontrada
+	// e o iterador da fila aponta pra ela
+	if (prioAnterior == 0) {
+		remove = DeleteAtIteratorFila2(__aptos_prio_0);
+	} else if (prioAnterior == 1) {
+		remove = DeleteAtIteratorFila2(__aptos_prio_1);
+	} else {
+		remove = DeleteAtIteratorFila2(__aptos_prio_2);
+	}
+	
+	// Insere a thread na sua nova fila, de acordo com sua prioridade
+	if (remove == 0 || remove == DELITER_VAZIA) {
+		success = insereEmApto(thread);
+	}
 
+	return success;
 }
 
 // ----------------------------------------------------------------------------------- //

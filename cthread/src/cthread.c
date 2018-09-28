@@ -39,9 +39,10 @@ int ccreate (void* (*start)(void*), void *arg, int prio) {
 int csetprio(int tid, int prio) {
 	TCB_t *thread, *emExecucao;
 	_Bool erro = 1;
-	_Bool emApto = -1;
+	int emApto = -1;
 	int i;
 	int prioAnterior;
+	int sucesso;
 
 	thread = buscaThread(tid, &erro, &emApto);
 	prioAnterior = thread->prio;
@@ -52,16 +53,26 @@ int csetprio(int tid, int prio) {
 		emExecucao = GetAtIteratorFila2(__executando);
 		if (thread->prio > emExecucao->prio) {
 			// retira "emExecucao" do exec, e coloca a thread
-
+			int removeErro;
+			int insereErro;
+			removeErro = removeDeExecutando();
+			
+			if (!removeErro) {
+				insereErro = insereEmExecutando(thread);
+				if (!insereErro) {
+					sucesso = insereEmApto(thread);
+				}
+			}
+			// FALTA FAZER A TROCA DE CONTEXTOS!!!
 		} else if(prioAnterior != thread->prio && emApto != -1) {
 			// move a thread para a fila de aptos de acordo com a prioridade, caso nao esteja no bloqueado
-			if
+			sucesso = alternaEntreAptos(thread, prioAnterior);
 		}
 	} else {
-		return -1;
+		sucesso = -1;
 	}
 
-	return 0;
+	return sucesso;
 }
 
 int cyield(void) {
