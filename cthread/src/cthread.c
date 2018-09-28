@@ -1,19 +1,23 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include "../include/support.h"
 #include "../include/cthread.h"
 #include "../include/cdata.h"
 #include "ucontext.h"
 #include "../src/escalonador.c"
 
-// static void trampoline(int cb, int arg)
-// {
-// 	void *(*real_cb)(void *) = (void *(*)(void *)) cb;
-// 	void *real_arg = arg;
-// 	real_cb(real_arg);
-// }
+#define __NUMBER_OF_ARGS 1
+static void trampoline(int cb, int arg)
+{
+	void *(*real_cb)(void *) = (void *(*)(void *)) cb;
+	void *real_arg = arg;
+	real_cb(real_arg);
+}
 
 int ccreate (void* (*start)(void*), void *arg, int prio) {
+	TCB_t *threadExec;
+
 	if (prio < 0 || prio > 2) {
 		return -1;
 	}
@@ -28,12 +32,37 @@ int ccreate (void* (*start)(void*), void *arg, int prio) {
 	contexto.uc_stack.ss_sp = stack;
 	contexto.uc_stack.ss_size = sizeof(stack);
 	contexto.uc_link = &contexto;
-	//makecontext(&contexto, trampoline, 2, (int) start, (int) arg);
+	makecontext(&contexto, start, __NUMBER_OF_ARGS, arg);
 
-	//struct TCB_t *tcb;
+	TCB_t *tcb = malloc(sizeof(TCB_t));
+	tcb->tid = Random2();
+	tcb->state = PROCST_CRIACAO; // Está sendo criado
+	tcb->prio = prio;
+	tcb->context = contexto;
+	tcb->data = NULL;
+
+	threadExec = retornaExecutando();
+	if (threadExec != NULL) {
+		if (tcb->prio < threadExec->prio) {
+			removeDeExecutando();
+			insereEmExecutando(tcb);
+			insereEmApto(threadExec);
+			if (swapcontext(&threadExec->context, &tcb->context) == -1) {
+				printf("Erro ao trocar os contextos\n");
+				return -1;
+			}
+		} else {
+			if (insereEmApto(tcb) != 0) {
+				printf("Erro ao inserir em apto\n");
+				return -1;
+			}
+		}
+	} else {
+		printf("Erro ao retornar a thread em execucao!!!\n");
+		return -1;
+	}
 	
-	
-	return 0;
+	return tcb->tid;
 }
 
 int csetprio(int tid, int prio) {
@@ -50,7 +79,7 @@ int csetprio(int tid, int prio) {
 		thread->prio = prio; // nova prioridade definida
 		FirstFila2(__executando);
 		emExecucao = GetAtIteratorFila2(__executando);
-		if (thread->prio > emExecucao->prio) {
+		if (thread->prio < emExecucao->prio) { // Comparador é <, pois para valores 0 é maior prio e 3 é menor prio
 			// retira "emExecucao" do exec, e coloca a thread
 			int removeErro;
 			int insereErro;
@@ -62,7 +91,11 @@ int csetprio(int tid, int prio) {
 					sucesso = insereEmApto(thread);
 				}
 			}
-			// FALTA FAZER A TROCA DE CONTEXTOS!!!
+			
+			if (swapcontext(&emExecucao->context, &thread->context) == -1) {
+				printf("Erro ao trocar os contextos\n");
+				return -1;
+			}
 		} else if(prioAnterior != thread->prio && emApto != -1) {
 			// move a thread para a fila de aptos de acordo com a prioridade, caso nao esteja no bloqueado
 			sucesso = alternaEntreAptos(thread, prioAnterior);
@@ -86,6 +119,11 @@ int cyield(void) {
 
 	threadParaExec = retornaApto();
 	sucesso = insereEmExecutando(threadParaExec);
+
+	if (swapcontext(&threadAtual->context, &threadParaExec->context) == -1){
+		printf("Erro ao trocar os contextos\n");
+		sucesso = 0;
+	}
 
 	if (!sucesso)
 		return -1;
@@ -112,4 +150,11 @@ int csignal(csem_t *sem) {
 int cidentify (char *name, int size) {
 	strncpy (name, "Eder Matheus Rodrigues Monteiro e Guilherme Girotto Sartori", size);
 	return 0;
+}
+
+int main () {
+	char *name;
+
+	cidentify(name, 60);
+	printf("%s\n", name);
 }
