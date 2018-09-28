@@ -1,11 +1,8 @@
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include "../include/support.h"
-#include "../include/cthread.h"
-#include "../include/cdata.h"
+#include "support.h"
+#include "cthread.h"
+#include "cdata.h"
 #include "ucontext.h"
-#include "../src/escalonador.c"
+#include "escalonador.h"
 
 #define __NUMBER_OF_ARGS 1
 static void trampoline(int cb, int arg)
@@ -148,13 +145,13 @@ int csignal(csem_t *sem) {
 }
 
 int cidentify (char *name, int size) {
-	strncpy (name, "Eder Matheus Rodrigues Monteiro e Guilherme Girotto Sartori", size);
+	strncpy (name, "Eder Matheus Rodrigues Monteiro e Guilherme Girotto Sartori\0", size);
 	return 0;
 }
 
 int main () {
-	char *name;
+	char *name[60];
 
-	cidentify(name, 60);
+	cidentify(&name, 60);
 	printf("%s\n", name);
 }

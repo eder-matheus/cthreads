@@ -1,5 +1,5 @@
-#include "../include/escalonador.h"
-#include "../include/support.h"
+#include "escalonador.h"
+#include "support.h"
 
 int inicializaFilas() {
 	int retorno = 0;

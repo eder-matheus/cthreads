@@ -11,23 +11,36 @@
 # 
 
 CC=gcc
+LINKER=ld
+OBJ = cthread.o
 LIB_DIR=./lib
-INC_DIR=./include
-BIN_DIR=./bin
-SRC_DIR=./src
+INC_DIR= -I ./include
+BIN_DIR=$(wildcard ./bin/*.o)
+THR_DIR=$(wildcard ./src/cthread.c)
+SCA_DIR=$(wildcard ./src/escalonador.c)
+SCA_OBJ=$(patsubst %.c,%.o,$(SCA_DIR))
+THR_OBJ=$(patsubst %.c,%.o,$(THR_DIR))
 
-all: regra1 regra2 regran
+#all: clean $(SCA_OBJ) $(THR_OBJ) $(OBJ)
+all: clean regra1
 
 regra1: #dependências para a regra1
-	$(CC) -o $(BIN_DIR)/regra1 $(SRC_DIR)/regra1.c -Wall -m32
+	$(CC) -Wall -m32 $(SCA_DIR) $(THR_DIR) $(INC_DIR) $(BIN_DIR) -o $(OBJ)
 
-regra2: #dependências para a regra2
-	$(CC) -o $(BIN_DIR)/regra2 $(SRC_DIR)/regra2.c -Wall -m32
+#$(OBJ): $(SCA_OBJ) $(THR_OBJ) #dependências para a regra1
+#	$(LINKER) -o $(INC_DIR) $(BIN_DIR) $@ $^ -Wall -m32
 
-regran: #dependências para a regran
-	$(CC) -o $(BIN_DIR)/regran $(SRC_DIR)/regran.c -Wall -m32
+./src/cthread.o: ./src/cthread.c #dependências para a regra2
+	$(CC) -Wall -m32 $(INC_DIR) $(BIN_DIR) -o $@ $<
+
+./src/escalonador.o: ./src/escalonador.c #dependências para a regra2
+	$(CC) -Wall -m32 $(INC_DIR) $(BIN_DIR) -o $@ $<
+
+
+#regran: #dependências para a regran
+#	$(CC) -o $(BIN_DIR)/regran $(SRC_DIR)/regran.c -Wall -m32
 
 clean:
-	rm -rf $(LIB_DIR)/*.a $(BIN_DIR)/*.o $(SRC_DIR)/*~ $(INC_DIR)/*~ *~
+	rm -rf $(LIB_DIR)/*.a ./src/*.o
 
 

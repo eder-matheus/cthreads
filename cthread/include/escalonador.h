@@ -1,5 +1,8 @@
-#include "../include/support.h"
-#include "../include/cdata.h"
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include "support.h"
+#include "cdata.h"
 
 PFILA2 __aptos_prio_0;
 PFILA2 __aptos_prio_1;
