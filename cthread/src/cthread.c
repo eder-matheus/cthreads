@@ -30,7 +30,7 @@ int ccreate (void* (*start)(void*), void *arg, int prio) {
 	contexto.uc_link = &contexto;
 	//makecontext(&contexto, trampoline, 2, (int) start, (int) arg);
 
-	struct TCB_t *tcb;
+	//struct TCB_t *tcb;
 	
 	
 	return 0;
@@ -40,7 +40,6 @@ int csetprio(int tid, int prio) {
 	TCB_t *thread, *emExecucao;
 	_Bool erro = 1;
 	int emApto = -1;
-	int i;
 	int prioAnterior;
 	int sucesso;
 
@@ -49,7 +48,7 @@ int csetprio(int tid, int prio) {
 
 	if (!erro) {
 		thread->prio = prio; // nova prioridade definida
-		i = FirstFila2(__executando);
+		FirstFila2(__executando);
 		emExecucao = GetAtIteratorFila2(__executando);
 		if (thread->prio > emExecucao->prio) {
 			// retira "emExecucao" do exec, e coloca a thread
@@ -76,7 +75,22 @@ int csetprio(int tid, int prio) {
 }
 
 int cyield(void) {
-	return -1;
+	// Remove thread atual de executando
+	TCB_t *threadAtual;
+	TCB_t *threadParaExec;
+	int sucesso;
+
+	threadAtual = retornaExecutando();
+	removeDeExecutando();
+	insereEmApto(threadAtual);
+
+	threadParaExec = retornaApto();
+	sucesso = insereEmExecutando(threadParaExec);
+
+	if (!sucesso)
+		return -1;
+
+	return sucesso;
 }
 
 int cjoin(int tid) {

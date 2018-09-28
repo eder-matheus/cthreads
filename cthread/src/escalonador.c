@@ -28,7 +28,7 @@ int insereEmApto(TCB_t *thread) {
 		return -1;
 	}
 
-	return 0;
+	return success;
 }
 
 // ----------------------------------------------------------------------------------- //
@@ -130,13 +130,63 @@ int removeDeBloqueado() {
 
 // ----------------------------------------------------------------------------------- //
 
+TCB_t* retornaExecutando() {
+	TCB_t *thread;
+	
+	FirstFila2(__executando);
+	thread = GetAtIteratorFila2(__executando);
+
+	return thread;
+}
+
+// ----------------------------------------------------------------------------------- //
+
+TCB_t* retornaApto() {
+	TCB_t *thread;
+	TCB_t *ptr_invalido = NULL;
+	int estado_iterador;
+
+	estado_iterador = FirstFila2(__aptos_prio_0);
+	if (estado_iterador == 0) { // fila nao vazia
+		thread = GetAtIteratorFila2(__aptos_prio_0);
+		return thread;
+	}
+
+	estado_iterador = FirstFila2(__aptos_prio_1);
+	if (estado_iterador == 0) { // fila nao vazia
+		thread = GetAtIteratorFila2(__aptos_prio_0);
+		return thread;
+	}
+
+	estado_iterador = FirstFila2(__aptos_prio_2);
+	if (estado_iterador == 0) { // fila nao vazia
+		thread = GetAtIteratorFila2(__aptos_prio_0);
+		return thread;
+	}
+
+	return ptr_invalido;
+}
+
+// ----------------------------------------------------------------------------------- //
+
+TCB_t* retornaBloqueado() {
+	TCB_t *thread;
+	
+	FirstFila2(__bloqueados);
+	thread = GetAtIteratorFila2(__bloqueados);
+
+	return thread;
+}
+
+// ----------------------------------------------------------------------------------- //
+
 int alternaEntreAptos(TCB_t *thread, int prioAnterior) {
 	int success;
 	int remove;
 
 	// Encontra a thread na sua fila atual
 	if (prioAnterior == 0) {
-		int i = FirstFila2(__aptos_prio_0);
+		FirstFila2(__aptos_prio_0);
 		_Bool encontrou = 0;
 		TCB_t *threadAtual;
 
@@ -145,11 +195,11 @@ int alternaEntreAptos(TCB_t *thread, int prioAnterior) {
 			if (thread->tid == threadAtual->tid) {
 				encontrou = 1;
 			} else {
-				i = NextFila2(__aptos_prio_0);
+				NextFila2(__aptos_prio_0);
 			}
 		}
 	} else if (prioAnterior == 1) {
-		int i = FirstFila2(__aptos_prio_1);
+		FirstFila2(__aptos_prio_1);
 		_Bool encontrou = 0;
 		TCB_t *threadAtual;
 		
@@ -158,11 +208,11 @@ int alternaEntreAptos(TCB_t *thread, int prioAnterior) {
 			if (thread->tid == threadAtual->tid) {
 				encontrou = 1;
 			} else {
-				i = NextFila2(__aptos_prio_1);
+				NextFila2(__aptos_prio_1);
 			}
 		}
 	} else if (prioAnterior == 2) {
-		int i = FirstFila2(__aptos_prio_2);
+		FirstFila2(__aptos_prio_2);
 		_Bool encontrou = 0;
 		TCB_t *threadAtual;
 		
@@ -171,7 +221,7 @@ int alternaEntreAptos(TCB_t *thread, int prioAnterior) {
 			if (thread->tid == threadAtual->tid) {
 				encontrou = 1;
 			} else {
-				i = NextFila2(__aptos_prio_2);
+				NextFila2(__aptos_prio_2);
 			}
 		}
 	} else {
@@ -211,6 +261,7 @@ TCB_t* buscaThread(int tid, _Bool *erro, int *emApto) {
 	// procura em executando
 	int estado_iterador;
 	TCB_t *tcb_temp;
+	TCB_t *ptr_invalido = NULL;
 
 	*erro = 0;
 	*emApto = -1;
@@ -259,6 +310,7 @@ TCB_t* buscaThread(int tid, _Bool *erro, int *emApto) {
 	}
 
 	*erro = 1;
+	return ptr_invalido;
 }
 
 // ----------------------------------------------------------------------------------- //

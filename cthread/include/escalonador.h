@@ -21,6 +21,12 @@ int removeDeApto();
 
 int removeDeBloqueado();
 
+TCB_t* retornaExecutando();
+
+TCB_t* retornaApto();
+
+TCB_t* retornaBloqueado();
+
 int alternaEntreAptos(TCB_t *thread, int prioAntiga);
 
 _Bool executandoLivre();
