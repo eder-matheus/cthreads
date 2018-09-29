@@ -3,11 +3,11 @@
 
 int inicializaFilas() {
 	int retorno = 0;
-	retorno += CreateFila2(__aptos_prio_0);
-	retorno += CreateFila2(__aptos_prio_1);
-	retorno += CreateFila2(__aptos_prio_2);
-	retorno += CreateFila2(__executando);
-	retorno += CreateFila2(__bloqueados);
+	retorno += CreateFila2(&__aptos_prio_0);
+	retorno += CreateFila2(&__aptos_prio_1);
+	retorno += CreateFila2(&__aptos_prio_2);
+	retorno += CreateFila2(&__executando);
+	retorno += CreateFila2(&__bloqueados);
 
 	return retorno;
 }
@@ -19,11 +19,11 @@ int insereEmApto(TCB_t *thread) {
 	int success;
 
 	if (prioridade == 0) {
-		success = AppendFila2(__aptos_prio_0, thread);
+		success = AppendFila2(&__aptos_prio_0, thread);
 	} else if (prioridade == 1) {
-		success = AppendFila2(__aptos_prio_1, thread);
+		success = AppendFila2(&__aptos_prio_1, thread);
 	} else if (prioridade == 2) {
-		success = AppendFila2(__aptos_prio_2, thread);
+		success = AppendFila2(&__aptos_prio_2, thread);
 	} else{ 
 		return -1;
 	}
@@ -36,7 +36,7 @@ int insereEmApto(TCB_t *thread) {
 int insereEmExecutando(TCB_t *thread) {
 	int success;
 
-	success = AppendFila2(__executando, thread);
+	success = AppendFila2(&__executando, thread);
 	return success;
 }
 
@@ -45,7 +45,7 @@ int insereEmExecutando(TCB_t *thread) {
 int insereEmBloqueado(TCB_t *thread) {
 	int success;
 
-	success = AppendFila2(__bloqueados, thread);
+	success = AppendFila2(&__bloqueados, thread);
 	return success;
 }
 
@@ -57,7 +57,7 @@ int removeDeExecutando() {
 
 	estado_iterador = FirstFila2(__executando);
 	if (estado_iterador == 0) {
-		estado_executando = DeleteAtIteratorFila2(__executando);
+		estado_executando = DeleteAtIteratorFila2(&__executando);
 	}
 
 	if (estado_executando != DELITER_VAZIA) {
@@ -74,9 +74,9 @@ int removeDeApto() {
 	int estado_apto;
 	int estado_iterador;
 
-	estado_iterador = FirstFila2(__aptos_prio_0);
+	estado_iterador = FirstFila2(&__aptos_prio_0);
 	if (estado_iterador == 0) { // fila nao vazia
-		estado_apto = DeleteAtIteratorFila2(__aptos_prio_0);
+		estado_apto = DeleteAtIteratorFila2(&__aptos_prio_0);
 		if (estado_apto == 0 || estado_apto == DELITER_VAZIA) {
 			return 0;
 		}
@@ -85,7 +85,7 @@ int removeDeApto() {
 		}
 	}
 
-	estado_iterador = FirstFila2(__aptos_prio_1);
+	estado_iterador = FirstFila2(&__aptos_prio_1);
 	if (estado_iterador == 0) { // fila nao vazia
 		estado_apto = DeleteAtIteratorFila2(__aptos_prio_1);
 		if (estado_apto == 0 || estado_apto == DELITER_VAZIA) {
@@ -96,9 +96,9 @@ int removeDeApto() {
 		}
 	}
 
-	estado_iterador = FirstFila2(__aptos_prio_2);
+	estado_iterador = FirstFila2(&__aptos_prio_2);
 	if (estado_iterador == 0) { // fila nao vazia
-		estado_apto = DeleteAtIteratorFila2(__aptos_prio_2);
+		estado_apto = DeleteAtIteratorFila2(&__aptos_prio_2);
 		if (estado_apto == 0 || estado_apto == DELITER_VAZIA) {
 			return 0;
 		}
@@ -116,9 +116,9 @@ int removeDeBloqueado() {
 	int estado_bloqueado;
 	int estado_iterador;
 
-	estado_iterador = FirstFila2(__bloqueados);
+	estado_iterador = FirstFila2(&__bloqueados);
 	if (estado_iterador == 0) {
-		estado_bloqueado = DeleteAtIteratorFila2(__bloqueados);
+		estado_bloqueado = DeleteAtIteratorFila2(&__bloqueados);
 	}
 
 	if (estado_bloqueado == 0 || estado_bloqueado == DELITER_VAZIA) {
@@ -132,10 +132,18 @@ int removeDeBloqueado() {
 
 TCB_t* retornaExecutando() {
 	TCB_t *thread;
-	
-	FirstFila2(__executando);
-	thread = GetAtIteratorFila2(__executando);
-
+	TCB_t* ptr_invalido = NULL;
+	int erro;
+	printf("Procurando em execucao\n");
+	erro = FirstFila2(&__executando);
+	printf("Terminou de procurar\n");
+	if (!erro) {
+		thread = GetAtIteratorFila2(&__executando);
+	}
+	else {
+		printf("Retornando ptr invalido\n");
+		return ptr_invalido;
+	}
 	return thread;
 }
 
@@ -146,21 +154,21 @@ TCB_t* retornaApto() {
 	TCB_t *ptr_invalido = NULL;
 	int estado_iterador;
 
-	estado_iterador = FirstFila2(__aptos_prio_0);
+	estado_iterador = FirstFila2(&__aptos_prio_0);
 	if (estado_iterador == 0) { // fila nao vazia
-		thread = GetAtIteratorFila2(__aptos_prio_0);
+		thread = GetAtIteratorFila2(&__aptos_prio_0);
 		return thread;
 	}
 
-	estado_iterador = FirstFila2(__aptos_prio_1);
+	estado_iterador = FirstFila2(&__aptos_prio_1);
 	if (estado_iterador == 0) { // fila nao vazia
-		thread = GetAtIteratorFila2(__aptos_prio_0);
+		thread = GetAtIteratorFila2(&__aptos_prio_0);
 		return thread;
 	}
 
-	estado_iterador = FirstFila2(__aptos_prio_2);
+	estado_iterador = FirstFila2(&__aptos_prio_2);
 	if (estado_iterador == 0) { // fila nao vazia
-		thread = GetAtIteratorFila2(__aptos_prio_0);
+		thread = GetAtIteratorFila2(&__aptos_prio_0);
 		return thread;
 	}
 
@@ -173,7 +181,7 @@ TCB_t* retornaBloqueado() {
 	TCB_t *thread;
 	
 	FirstFila2(__bloqueados);
-	thread = GetAtIteratorFila2(__bloqueados);
+	thread = GetAtIteratorFila2(&__bloqueados);
 
 	return thread;
 }
@@ -191,33 +199,33 @@ int alternaEntreAptos(TCB_t *thread, int prioAnterior) {
 		TCB_t *threadAtual;
 
 		while (!encontrou) {
-			threadAtual = GetAtIteratorFila2(__aptos_prio_0);
+			threadAtual = GetAtIteratorFila2(&__aptos_prio_0);
 			if (thread->tid == threadAtual->tid) {
 				encontrou = 1;
 			} else {
-				NextFila2(__aptos_prio_0);
+				NextFila2(&__aptos_prio_0);
 			}
 		}
 	} else if (prioAnterior == 1) {
-		FirstFila2(__aptos_prio_1);
+		FirstFila2(&__aptos_prio_1);
 		_Bool encontrou = 0;
 		TCB_t *threadAtual;
 		
 		while (!encontrou) {
-			threadAtual = GetAtIteratorFila2(__aptos_prio_1);
+			threadAtual = GetAtIteratorFila2(&__aptos_prio_1);
 			if (thread->tid == threadAtual->tid) {
 				encontrou = 1;
 			} else {
-				NextFila2(__aptos_prio_1);
+				NextFila2(&__aptos_prio_1);
 			}
 		}
 	} else if (prioAnterior == 2) {
-		FirstFila2(__aptos_prio_2);
+		FirstFila2(&__aptos_prio_2);
 		_Bool encontrou = 0;
 		TCB_t *threadAtual;
 		
 		while (!encontrou) {
-			threadAtual = GetAtIteratorFila2(__aptos_prio_2);
+			threadAtual = GetAtIteratorFila2(&__aptos_prio_2);
 			if (thread->tid == threadAtual->tid) {
 				encontrou = 1;
 			} else {

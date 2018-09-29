@@ -4,6 +4,8 @@
 #include "support.h"
 #include "cdata.h"
 
+#define STACK_SIZE 131072
+
 PFILA2 __aptos_prio_0;
 PFILA2 __aptos_prio_1;
 PFILA2 __aptos_prio_2;
