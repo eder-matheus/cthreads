@@ -4,8 +4,6 @@
 #include "ucontext.h"
 #include "escalonador.h"
 
-static ucontext_t uctx_main;
-
 #define __NUMBER_OF_ARGS 1
 int __tid = 1;
 // static void trampoline(int cb, int arg)
@@ -17,7 +15,6 @@ int __tid = 1;
 
 int ccreate (void* (*start)(void*), void *arg, int prio) {
 	int erro;
-	TCB_t *threadExec;
 	ucontext_t *contexto_fim_de_thread = (ucontext_t *) malloc(sizeof(ucontext_t));
 
 	if (prio < 0 || prio > 2) {
@@ -45,7 +42,7 @@ int ccreate (void* (*start)(void*), void *arg, int prio) {
 	contexto.uc_stack.ss_sp = (char*) malloc(STACK_SIZE * sizeof(char));
 	contexto.uc_stack.ss_size = STACK_SIZE;
 	contexto.uc_link = contexto_fim_de_thread;
-	makecontext(&contexto, (void (*) (void))start, __NUMBER_OF_ARGS, arg);
+	makecontext(&contexto, (void (*) (void))start, __NUMBER_OF_ARGS, (void *)arg);
 
 //	printf("Inicializando tcb\n");
 	TCB_t *tcb = (TCB_t*) malloc(sizeof(TCB_t));
@@ -178,44 +175,47 @@ int cidentify (char *name, int size) {
 
 // --------------------------------------------------------------------------------------------------- //
 
-static void* func1(void) {
-	printf("func1: started\n");
-	printf("func1: swapcontext(&uctx_func1, &uctx_func2)\n");
-	cyield();
-	printf("f1: swapcontext\n");
-	printf("func1: returning\n");
-	return;
-}
+// static void* func1(void) {
+// 	printf("func1: started\n");
+// 	printf("func1: swapcontext(&uctx_func1, &uctx_func2)\n");
+// 	cyield();
+// 	printf("f1: swapcontext\n");
+// 	printf("func1: returning\n");
+// 	return;
+// }
 
-static void* func2(void) {
-	printf("func2: started ->\n");
-	printf("func2: swapcontext(&uctx_func2, &uctx_func1)\n");
-	cyield();
-	printf("f2: swapcontext\n");
-	printf("func2: returning\n");
-}
+// static void* func2(void) {
+// 	printf("func2: started ->\n");
+// 	printf("func2: swapcontext(&uctx_func2, &uctx_func1)\n");
+// 	cyield();
+// 	printf("f2: swapcontext\n");
+// 	printf("func2: returning\n");
+// }
 
 int main () {
 	inicializaFilas();
 	printf("Terminou de inicializar as filas\n");
-	char name[60];
+	// char name[60];
 
-	cidentify(name, 60);
-	printf("%s\n", name);
+	// cidentify(name, 60);
+	// printf("%s\n", name);
 
-	int i;
+	// int i;
 
-	int tid = ccreate(&func1, (void*)&i, 0);
-	int tid2 = ccreate(&func2, (void*)&i, 0);
+	// int tid = ccreate(&func1, (void*)&i, 0);
+	// int tid2 = ccreate(&func2, (void*)&i, 0);
 
-	TCB_t *thread;
-	int j = tid + tid2;
-	thread = retornaApto();
+	// cjoin(tid);
+	// cjoin(tid2);
 
-	removeDeApto();
-	insereEmExecutando(thread);
-	swapcontext(&uctx_main, &thread->context);
+	// TCB_t *thread;
+	// thread = retornaApto();
 
-	printf("Main terminou!\n");
+
+	// removeDeApto();
+	// insereEmExecutando(thread);
+	// swapcontext(&uctx_main, &thread->context);
+
+	// printf("Main terminou!\n");
 	return 0;
 }

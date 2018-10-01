@@ -448,7 +448,8 @@ void proximaThread() {
 	sucesso = insereEmExecutando(proximaThread);
 
 	// executa a proxima thread "setando" seu contexto
-	setcontext(&proximaThread->context);
+	if (sucesso == 0)
+		setcontext(&proximaThread->context);
 }
 
 // --------------------------------------------------------------------------------------------------- //
