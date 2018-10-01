@@ -39,3 +39,9 @@ _Bool executandoLivre();
 TCB_t* buscaThread(int tid, _Bool *erro, int *emApto);
 
 int atualizaPrioridade(int tid, int nova_prio);
+
+int escalonaThread(TCB_t *thread);
+
+int finalizaThread();
+
+void proximaThread();

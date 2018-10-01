@@ -7,6 +7,7 @@
 static ucontext_t uctx_main;
 
 #define __NUMBER_OF_ARGS 1
+int __tid = 1;
 // static void trampoline(int cb, int arg)
 // {
 // 	void *(*real_cb)(void *) = (void *(*)(void *)) cb;
@@ -15,7 +16,9 @@ static ucontext_t uctx_main;
 // }
 
 int ccreate (void* (*start)(void*), void *arg, int prio) {
+	int erro;
 	TCB_t *threadExec;
+	ucontext_t *contexto_fim_de_thread = (ucontext_t *) malloc(sizeof(ucontext_t));
 
 	if (prio < 0 || prio > 2) {
 		return -1;
@@ -27,51 +30,47 @@ int ccreate (void* (*start)(void*), void *arg, int prio) {
 		printf("getcontext falhou\n");
 	}
 
-	printf("Inicializando contexto\n");
+	if (getcontext(contexto_fim_de_thread) == -1) {
+		printf("getcontext para fim de thread falhou\n");
+		return -1;
+	}
+
+//	printf("Inicializando contexto para fim de thread\n");
+	contexto_fim_de_thread->uc_stack.ss_sp = (char*) malloc(STACK_SIZE * sizeof(char));
+	contexto_fim_de_thread->uc_stack.ss_size = STACK_SIZE;
+	contexto_fim_de_thread->uc_link = NULL;
+	makecontext(contexto_fim_de_thread, (void (*) (void))finalizaThread, 0);	
+
+//	printf("Inicializando contexto\n");
 	contexto.uc_stack.ss_sp = (char*) malloc(STACK_SIZE * sizeof(char));
 	contexto.uc_stack.ss_size = STACK_SIZE;
-	contexto.uc_link = &uctx_main;
+	contexto.uc_link = contexto_fim_de_thread;
 	makecontext(&contexto, (void (*) (void))start, __NUMBER_OF_ARGS, arg);
 
-	printf("Inicializando tcb\n");
-	TCB_t *tcb = malloc(sizeof(TCB_t));
-	tcb->tid = Random2();
-	tcb->state = PROCST_CRIACAO; // Está sendo criado
+//	printf("Inicializando tcb\n");
+	TCB_t *tcb = (TCB_t*) malloc(sizeof(TCB_t));
+	tcb->tid = __tid;
+	tcb->state = PROCST_APTO; // Vai direto pro apto
 	tcb->prio = prio;
 	tcb->context = contexto;
 	tcb->data = NULL;
-
-	printf("-----tid da thread: %d\n", tcb->tid);
+	__tid += 1;
 
 	printf("Inserindo tcb no escalonador\n");
-	threadExec = retornaExecutando();
-	printf("Retorna thread do executando\n");
-	if (threadExec != NULL) {
-		if (tcb->prio < threadExec->prio) {
-			removeDeExecutando();
-			insereEmExecutando(tcb);
-			insereEmApto(threadExec);
-			if (swapcontext(&threadExec->context, &tcb->context) == -1) {
-				printf("Erro ao trocar os contextos\n");
-				return -1;
-			}
-		} else {
-			printf("Inserindo em apto\n");
-			if (insereEmApto(tcb) != 0) {
-				printf("Erro ao inserir em apto\n");
-				return -1;
-			}
-		}
-	} else {
-		printf("Inserindo em apto\n");
-		if (insereEmApto(tcb) != 0) {
-			printf("Erro ao inserir em apto\n");
-			return -1;
-		}
-	}
+
 	
-	return tcb->tid;
+	erro = escalonaThread(tcb);
+
+	if (!erro) {
+		return tcb->tid;
+	}
+
+	printf("Erro ao adcionar thread\n");
+
+	return -1;
 }
+
+// --------------------------------------------------------------------------------------------------- //
 
 int csetprio(int tid, int prio) {
 	TCB_t *thread, *emExecucao;
@@ -115,67 +114,84 @@ int csetprio(int tid, int prio) {
 	return sucesso;
 }
 
+// --------------------------------------------------------------------------------------------------- //
+
 int cyield(void) {
 	// Remove thread atual de executando
 	TCB_t *threadAtual;
 	TCB_t *threadParaExec;
-	int sucesso;
+	_Bool sucesso;
 
+	// Busca a thread que está executando e a retira de execucao
 	threadAtual = retornaExecutando();
 	removeDeExecutando();
-	printf("Alterando escalonador \n");
-	printf("Inserindo thread em apto\n");
-	insereEmApto(threadAtual);
-	printf("Buscando nova thread \n");
+
+	// Busca a proxima thread apta e a retira da fila de aptos
 	threadParaExec = retornaApto();
-	printf("Inserindo nova thread em exec \n");
+	removeDeApto();
+	
+	// Insere em apto a thread que foi retirada de execucao
+	insereEmApto(threadAtual);
 	sucesso = insereEmExecutando(threadParaExec);
-	printf("Escalonador pronto \n");
+	
 	if (swapcontext(&threadAtual->context, &threadParaExec->context) == -1){
-		printf("Erro ao trocar os contextos\n");
+		printf("Erro ao trocar os contextos em cyield\n");
 		sucesso = 0;
 	}
 
 	if (!sucesso)
 		return -1;
 
-	return sucesso;
+	return 0;
 }
+
+// --------------------------------------------------------------------------------------------------- //
 
 int cjoin(int tid) {
 	return -1;
 }
 
+// --------------------------------------------------------------------------------------------------- //
+
 int csem_init(csem_t *sem, int count) {
 	return -1;
 }
+
+// --------------------------------------------------------------------------------------------------- //
 
 int cwait(csem_t *sem) {
 	return -1;
 }
 
+// --------------------------------------------------------------------------------------------------- //
+
 int csignal(csem_t *sem) {
 	return -1;
 }
+
+// --------------------------------------------------------------------------------------------------- //
 
 int cidentify (char *name, int size) {
 	strncpy (name, "Eder Matheus Rodrigues Monteiro e Guilherme Girotto Sartori\0", size);
 	return 0;
 }
 
-static void func1(void) {
+// --------------------------------------------------------------------------------------------------- //
+
+static void* func1(void) {
 	printf("func1: started\n");
 	printf("func1: swapcontext(&uctx_func1, &uctx_func2)\n");
 	cyield();
-	printf("swapcontext");
+	printf("f1: swapcontext\n");
 	printf("func1: returning\n");
+	return;
 }
 
-static void func2(void) {
+static void* func2(void) {
 	printf("func2: started ->\n");
 	printf("func2: swapcontext(&uctx_func2, &uctx_func1)\n");
 	cyield();
-	printf("swapcontext");
+	printf("f2: swapcontext\n");
 	printf("func2: returning\n");
 }
 
@@ -187,18 +203,19 @@ int main () {
 	cidentify(name, 60);
 	printf("%s\n", name);
 
-	int i = 40000;
-	char func1_stack[16384];
-	char func2_stack[16384];
+	int i;
 
-	int tid = ccreate(func1, 0, 0);
-	int tid2 = ccreate(func2, 0, 0);
+	int tid = ccreate(&func1, (void*)&i, 0);
+	int tid2 = ccreate(&func2, (void*)&i, 0);
 
 	TCB_t *thread;
-
+	int j = tid + tid2;
 	thread = retornaApto();
-	printf("tid: %d \n", thread->tid);
 
+	removeDeApto();
 	insereEmExecutando(thread);
 	swapcontext(&uctx_main, &thread->context);
+
+	printf("Main terminou!\n");
+	return 0;
 }
