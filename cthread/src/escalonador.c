@@ -374,20 +374,21 @@ int atualizaPrioridade(int tid, int nova_prio) {
 
 // --------------------------------------------------------------------------------------------------- //
 
-int escalonaThread(TCB_t *threadApta) {
+int escalonaThread(TCB_t *thread) {
 	TCB_t *threadExec;
 
 	threadExec = retornaExecutando();
 
 	if (threadExec != NULL) { // existe thread em execucao
-		if (threadApta->prio < threadExec->prio) { // se a thread em execucao tiver prioridade menor do que a criada
+		if (thread->prio < threadExec->prio) { // se a thread em execucao tiver prioridade menor do que a criada
 			removeDeExecutando();
-			insereEmExecutando(threadApta); // insere a nova thread em execucao
+			insereEmExecutando(thread); // insere a nova thread em execucao
 			insereEmApto(threadExec); // insere a antiga no apto
 			if (swapcontext(&threadExec->context, &threadApta->context) == -1) { // troca o contexto para a thread nova
 				printf("Erro ao trocar os contextos\n");
 				return -1;
 			}
+			return 1;
 		} else {
 			if (insereEmApto(threadApta) != 0) {
 				printf("Erro ao inserir em apto\n");

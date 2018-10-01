@@ -70,7 +70,7 @@ int ccreate (void* (*start)(void*), void *arg, int prio) {
 // --------------------------------------------------------------------------------------------------- //
 
 int csetprio(int tid, int prio) {
-	TCB_t *thread, *emExecucao;
+	TCB_t *thread;
 	_Bool erro = 1;
 	int emApto = -1;
 	int prioAnterior;
@@ -79,12 +79,15 @@ int csetprio(int tid, int prio) {
 	thread = buscaThread(tid, &erro, &emApto);
 	prioAnterior = thread->prio;
 
+	if ()
+
 	if (!erro) {
 		thread->prio = prio; // nova prioridade definida
 		FirstFila2(&__executando);
 		emExecucao = GetAtIteratorFila2(&__executando);
 		if (thread->prio < emExecucao->prio) { // Comparador é <, pois para valores 0 é maior prio e 3 é menor prio
 			// retira "emExecucao" do exec, e coloca a thread
+
 			int removeErro;
 			int insereErro;
 			removeErro = removeDeExecutando();
@@ -92,7 +95,7 @@ int csetprio(int tid, int prio) {
 			if (!removeErro) {
 				insereErro = insereEmExecutando(thread);
 				if (!insereErro) {
-					sucesso = insereEmApto(thread);
+					sucesso = insereEmApto(exExecucao);
 				}
 			}
 			
