@@ -6,11 +6,11 @@
 
 #define STACK_SIZE 131072
 
-PFILA2 __aptos_prio_0;
-PFILA2 __aptos_prio_1;
-PFILA2 __aptos_prio_2;
-PFILA2 __executando;
-PFILA2 __bloqueados;
+FILA2 __aptos_prio_0;
+FILA2 __aptos_prio_1;
+FILA2 __aptos_prio_2;
+FILA2 __executando;
+FILA2 __bloqueados;
 
 int inicializaFilas();
 

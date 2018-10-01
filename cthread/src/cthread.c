@@ -41,7 +41,7 @@ int ccreate (void* (*start)(void*), void *arg, int prio) {
 	tcb->context = contexto;
 	tcb->data = NULL;
 
-	printf("-----tid da thread: %d", tcb->tid);
+	printf("-----tid da thread: %d\n", tcb->tid);
 
 	printf("Inserindo tcb no escalonador\n");
 	threadExec = retornaExecutando();
@@ -85,8 +85,8 @@ int csetprio(int tid, int prio) {
 
 	if (!erro) {
 		thread->prio = prio; // nova prioridade definida
-		FirstFila2(__executando);
-		emExecucao = GetAtIteratorFila2(__executando);
+		FirstFila2(&__executando);
+		emExecucao = GetAtIteratorFila2(&__executando);
 		if (thread->prio < emExecucao->prio) { // Comparador é <, pois para valores 0 é maior prio e 3 é menor prio
 			// retira "emExecucao" do exec, e coloca a thread
 			int removeErro;
@@ -123,11 +123,14 @@ int cyield(void) {
 
 	threadAtual = retornaExecutando();
 	removeDeExecutando();
+	printf("Alterando escalonador \n");
+	printf("Inserindo thread em apto\n");
 	insereEmApto(threadAtual);
-
+	printf("Buscando nova thread \n");
 	threadParaExec = retornaApto();
+	printf("Inserindo nova thread em exec \n");
 	sucesso = insereEmExecutando(threadParaExec);
-
+	printf("Escalonador pronto \n");
 	if (swapcontext(&threadAtual->context, &threadParaExec->context) == -1){
 		printf("Erro ao trocar os contextos\n");
 		sucesso = 0;
@@ -163,18 +166,17 @@ int cidentify (char *name, int size) {
 static void func1(void) {
 	printf("func1: started\n");
 	printf("func1: swapcontext(&uctx_func1, &uctx_func2)\n");
-	// if (swapcontext(&uctx_func1, &uctx_func2) == -1)
+	cyield();
 	printf("swapcontext");
 	printf("func1: returning\n");
 }
 
-static int func2(int i) {
-	printf("func2: started -> %d\n", i);
+static void func2(void) {
+	printf("func2: started ->\n");
 	printf("func2: swapcontext(&uctx_func2, &uctx_func1)\n");
-	// if (swapcontext(&uctx_func2, &uctx_func1) == -1)
+	cyield();
 	printf("swapcontext");
 	printf("func2: returning\n");
-	return i;
 }
 
 int main () {
@@ -190,11 +192,13 @@ int main () {
 	char func2_stack[16384];
 
 	int tid = ccreate(func1, 0, 0);
+	int tid2 = ccreate(func2, 0, 0);
 
 	TCB_t *thread;
 
 	thread = retornaApto();
-	printf("tid: %d", thread->tid);
+	printf("tid: %d \n", thread->tid);
 
+	insereEmExecutando(thread);
 	swapcontext(&uctx_main, &thread->context);
 }

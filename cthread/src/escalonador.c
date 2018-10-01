@@ -17,7 +17,7 @@ int inicializaFilas() {
 int insereEmApto(TCB_t *thread) {
 	int prioridade = thread->prio;
 	int success;
-
+	printf ("Thread prio: %d", thread->prio);
 	if (prioridade == 0) {
 		success = AppendFila2(&__aptos_prio_0, thread);
 	} else if (prioridade == 1) {
@@ -54,13 +54,18 @@ int insereEmBloqueado(TCB_t *thread) {
 int removeDeExecutando() {
 	int estado_executando;
 	int estado_iterador;
-
-	estado_iterador = FirstFila2(__executando);
+	printf("Definindo iterador \n");
+	estado_iterador = FirstFila2(&__executando);
+	printf("Definiu iterador \n");
 	if (estado_iterador == 0) {
+		printf("Retirando de exec \n");
 		estado_executando = DeleteAtIteratorFila2(&__executando);
+		printf("Retirou de exec \n");
+		estado_iterador = FirstFila2(&__executando);
 	}
+	printf("Estado exec: %d \n", estado_executando);
 
-	if (estado_executando != DELITER_VAZIA) {
+	if (estado_executando != 0 && estado_iterador == 0) {
 		printf ("Erro ao retirar de executando: fila nao esta vazia\n");
 		return -1;
 	}
@@ -87,7 +92,7 @@ int removeDeApto() {
 
 	estado_iterador = FirstFila2(&__aptos_prio_1);
 	if (estado_iterador == 0) { // fila nao vazia
-		estado_apto = DeleteAtIteratorFila2(__aptos_prio_1);
+		estado_apto = DeleteAtIteratorFila2(&__aptos_prio_1);
 		if (estado_apto == 0 || estado_apto == DELITER_VAZIA) {
 			return 0;
 		}
@@ -180,7 +185,7 @@ TCB_t* retornaApto() {
 TCB_t* retornaBloqueado() {
 	TCB_t *thread;
 	
-	FirstFila2(__bloqueados);
+	FirstFila2(&__bloqueados);
 	thread = GetAtIteratorFila2(&__bloqueados);
 
 	return thread;
@@ -194,7 +199,7 @@ int alternaEntreAptos(TCB_t *thread, int prioAnterior) {
 
 	// Encontra a thread na sua fila atual
 	if (prioAnterior == 0) {
-		FirstFila2(__aptos_prio_0);
+		FirstFila2(&__aptos_prio_0);
 		_Bool encontrou = 0;
 		TCB_t *threadAtual;
 
@@ -229,7 +234,7 @@ int alternaEntreAptos(TCB_t *thread, int prioAnterior) {
 			if (thread->tid == threadAtual->tid) {
 				encontrou = 1;
 			} else {
-				NextFila2(__aptos_prio_2);
+				NextFila2(&__aptos_prio_2);
 			}
 		}
 	} else {
@@ -238,11 +243,11 @@ int alternaEntreAptos(TCB_t *thread, int prioAnterior) {
 	// Aqui, a thread a ser movida entre as filas já foi encontrada
 	// e o iterador da fila aponta pra ela
 	if (prioAnterior == 0) {
-		remove = DeleteAtIteratorFila2(__aptos_prio_0);
+		remove = DeleteAtIteratorFila2(&__aptos_prio_0);
 	} else if (prioAnterior == 1) {
-		remove = DeleteAtIteratorFila2(__aptos_prio_1);
+		remove = DeleteAtIteratorFila2(&__aptos_prio_1);
 	} else {
-		remove = DeleteAtIteratorFila2(__aptos_prio_2);
+		remove = DeleteAtIteratorFila2(&__aptos_prio_2);
 	}
 	
 	// Insere a thread na sua nova fila, de acordo com sua prioridade
@@ -256,7 +261,7 @@ int alternaEntreAptos(TCB_t *thread, int prioAnterior) {
 // ----------------------------------------------------------------------------------- //
 
 _Bool executandoLivre() {
-	if (FirstFila2(__executando) != 0) {
+	if (FirstFila2(&__executando) != 0) {
 		return 1;
 	}
 
@@ -274,43 +279,43 @@ TCB_t* buscaThread(int tid, _Bool *erro, int *emApto) {
 	*erro = 0;
 	*emApto = -1;
 
-	estado_iterador = FirstFila2(__executando);
+	estado_iterador = FirstFila2(&__executando);
 	if (estado_iterador == 0) {
-		tcb_temp = GetAtIteratorFila2(__executando);
+		tcb_temp = GetAtIteratorFila2(&__executando);
 		if (tcb_temp->tid == tid) {
 			return tcb_temp;
 		}
 	}
 
-	estado_iterador = FirstFila2(__bloqueados);
+	estado_iterador = FirstFila2(&__bloqueados);
 	if (estado_iterador == 0) {
-		tcb_temp = GetAtIteratorFila2(__bloqueados);
+		tcb_temp = GetAtIteratorFila2(&__bloqueados);
 		if (tcb_temp->tid == tid) {
 			return tcb_temp;
 		}
 	}
 
-	estado_iterador = FirstFila2(__aptos_prio_0);
+	estado_iterador = FirstFila2(&__aptos_prio_0);
 	if (estado_iterador == 0) {
-		tcb_temp = GetAtIteratorFila2(__aptos_prio_0);
+		tcb_temp = GetAtIteratorFila2(&__aptos_prio_0);
 		if (tcb_temp->tid == tid) {
 			*emApto = 0;
 			return tcb_temp;
 		}
 	}
 
-	estado_iterador = FirstFila2(__aptos_prio_1);
+	estado_iterador = FirstFila2(&__aptos_prio_1);
 	if (estado_iterador == 0) {
-		tcb_temp = GetAtIteratorFila2(__aptos_prio_1);
+		tcb_temp = GetAtIteratorFila2(&__aptos_prio_1);
 		if (tcb_temp->tid == tid) {
 			*emApto = 1;
 			return tcb_temp;
 		}
 	}
 
-	estado_iterador = FirstFila2(__aptos_prio_2);
+	estado_iterador = FirstFila2(&__aptos_prio_2);
 	if (estado_iterador == 0) {
-		tcb_temp = GetAtIteratorFila2(__aptos_prio_2);
+		tcb_temp = GetAtIteratorFila2(&__aptos_prio_2);
 		if (tcb_temp->tid == tid) {
 			*emApto = 2;
 			return tcb_temp;
@@ -326,45 +331,45 @@ TCB_t* buscaThread(int tid, _Bool *erro, int *emApto) {
 int atualizaPrioridade(int tid, int nova_prio) {
 	int estado_iterador;
 	TCB_t *tcb_temp;
-	estado_iterador = FirstFila2(__executando);
+	estado_iterador = FirstFila2(&__executando);
 	if (estado_iterador == 0) {
-		tcb_temp = GetAtIteratorFila2(__executando);
+		tcb_temp = GetAtIteratorFila2(&__executando);
 		if (tcb_temp->tid == tid) {
 			tcb_temp->prio = nova_prio;
 			return 0;
 		}
 	}
 
-	estado_iterador = FirstFila2(__bloqueados);
+	estado_iterador = FirstFila2(&__bloqueados);
 	if (estado_iterador == 0) {
-		tcb_temp = GetAtIteratorFila2(__bloqueados);
+		tcb_temp = GetAtIteratorFila2(&__bloqueados);
 		if (tcb_temp->tid == tid) {
 			tcb_temp->prio = nova_prio;
 			return 0;
 		}
 	}
 
-	estado_iterador = FirstFila2(__aptos_prio_0);
+	estado_iterador = FirstFila2(&__aptos_prio_0);
 	if (estado_iterador == 0) {
-		tcb_temp = GetAtIteratorFila2(__aptos_prio_0);
+		tcb_temp = GetAtIteratorFila2(&__aptos_prio_0);
 		if (tcb_temp->tid == tid) {
 			tcb_temp->prio = nova_prio;
 			return 0;
 		}
 	}
 
-	estado_iterador = FirstFila2(__aptos_prio_1);
+	estado_iterador = FirstFila2(&__aptos_prio_1);
 	if (estado_iterador == 0) {
-		tcb_temp = GetAtIteratorFila2(__aptos_prio_1);
+		tcb_temp = GetAtIteratorFila2(&__aptos_prio_1);
 		if (tcb_temp->tid == tid) {
 			tcb_temp->prio = nova_prio;
 			return 0;
 		}
 	}
 
-	estado_iterador = FirstFila2(__aptos_prio_2);
+	estado_iterador = FirstFila2(&__aptos_prio_2);
 	if (estado_iterador == 0) {
-		tcb_temp = GetAtIteratorFila2(__aptos_prio_2);
+		tcb_temp = GetAtIteratorFila2(&__aptos_prio_2);
 		if (tcb_temp->tid == tid) {
 			tcb_temp->prio = nova_prio;
 			return 0;
