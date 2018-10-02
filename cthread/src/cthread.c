@@ -254,7 +254,8 @@ static void* func4(void) {
 
 static void* func3(void) {
 	printf("---func3: started ->\n");
-	printf("---func3: runnig\n");
+	printf("---func3: set prio\n");
+	csetprio(3,2);
 	printf("---f3: finishing\n");
 	printf("---func3: returning\n");
 }
