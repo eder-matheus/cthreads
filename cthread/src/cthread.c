@@ -87,16 +87,14 @@ int ccreate (void* (*start)(void*), void *arg, int prio) {
 int csetprio(int tid, int prio) {
 	TCB_t *thread;
 	TCB_t *em_apto;
-	_Bool erro = 1;
-	int emApto = -1;
 	int sucesso;
 
 	// thread encontrada sempre estará em executando
-	thread = buscaThread(tid, &erro, &emApto);
-
-	if (!erro) {
+	thread = retornaExecutando();
+	
+	if (thread != NULL) {
 		if (thread->state != PROCST_EXEC) {
-			printf("Erro em csetprio: tentativa de modificar a prio de outra thread\n");;
+			printf("Erro em csetprio: tentativa de modificar a prio de outra thread\n");
 			return -1;
 		}
 
@@ -123,6 +121,7 @@ int csetprio(int tid, int prio) {
 			}
 		}
 	} else {
+		printf("Erro interno em csetprio: thread a ter prioridade atualizada nao encontrada\n");
 		sucesso = -1;
 	}
 
