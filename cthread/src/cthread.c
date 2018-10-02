@@ -14,6 +14,7 @@ static ucontext_t contexto_main;
 int __tid = 1;
 
 int ccreate (void* (*start)(void*), void *arg, int prio) {
+	printf("Criando thread\n");
 	if (!__filas_inicializadas) {
 		inicializaFilas();
 		__filas_inicializadas = 1;
@@ -22,9 +23,9 @@ int ccreate (void* (*start)(void*), void *arg, int prio) {
 	if (!__tcb_main_inicializado) {
 		// inicializaMain();
 		TCB_t *mainThread = (TCB_t*) malloc(sizeof(TCB_t));
-		mainThread->tid = __tid;
+		mainThread->tid = 0;
 		mainThread->state = PROCST_CRIACAO; // Vai direto pro apto
-		mainThread->prio = prio;
+		mainThread->prio = 2;
 		mainThread->context = contexto_main;
 		mainThread->data = NULL;
 
@@ -168,7 +169,8 @@ int cjoin(int tid) {
 	int emApto;
 
 	thread_atual = retornaExecutando();
-	printf("Pegou thread atual\n");
+	printf("Pegou thread atual: %d\n", thread_atual->tid);
+
 
 	ucontext_t *contexto_fim_de_thread = (ucontext_t *) malloc(sizeof(ucontext_t));
 
@@ -182,12 +184,10 @@ int cjoin(int tid) {
 	contexto_fim_de_thread->uc_link = NULL;
 	makecontext(contexto_fim_de_thread, (void (*) (void))sincronizaTermino, __NUMBER_OF_ARGS, thread_atual->tid);	
 
-	printf("Cria contexto de call back\n");
-
+	printf("Busca thread para esperar\n");
 	thread_esperada = buscaThread(tid, &erro, &emApto);
 	thread_esperada->context.uc_link = contexto_fim_de_thread;
-
-	printf("Seta novo link para contexto da thread esperada\n");
+	printf("Encontrou thread %d\n", thread_esperada->tid);
 
 	// bloqueia thread atual
 	removeDeExecutando();
@@ -263,8 +263,6 @@ int main () {
 	int tid = ccreate(&func1, (void*)&i, 0);
 	int tid2 = ccreate(&func2, (void*)&i, 0);
 
-	cjoin(tid);
-	cjoin(tid2);
 
 	// TCB_t *thread;
 	// thread = retornaApto();

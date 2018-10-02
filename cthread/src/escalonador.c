@@ -421,7 +421,7 @@ int escalonaThread(TCB_t *thread) {
 				printf("Erro ao trocar os contextos\n");
 				return -1;
 			}
-			return 1;
+			return 0;
 		} else {
 			// printf("Inserindo em apto1");
 			if (insereEmApto(thread) != 0) {
