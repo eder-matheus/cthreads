@@ -197,7 +197,7 @@ int removeDeBloqueado(TCB_t *thread) {
 
 // ----------------------------------------------------------------------------------- //
 
-int removeDeThreadEsperada(int tid) {
+int removeDeThreadsEsperadas(int tid) {
 	int estado_iterador;
 	int *tid_temp;
 
@@ -558,10 +558,12 @@ int finalizaThread() {
 // --------------------------------------------------------------------------------------------------- //
 
 void proximaThread() {
+	printf("Buscando proxima thread\n");
 	TCB_t *proxima_thread;
 	int sucesso;
 
 	proxima_thread = retornaApto();
+	
 	if (proxima_thread == NULL) {
 		printf("Nao ha mais threads em apto\n");
 		return;
@@ -572,6 +574,8 @@ void proximaThread() {
 	
 	// e a insere em execucao
 	sucesso = insereEmExecutando(proxima_thread);
+
+	printf("Executando proxima thread %d\n", proxima_thread->tid);
 
 	// executa a proxima thread "setando" seu contexto
 	if (sucesso == 0)

@@ -34,7 +34,7 @@ int removeDeApto();
 
 int removeDeBloqueado(TCB_t *thread);
 
-int removeDeThreadEsperada(int tid);
+int removeDeThreadsEsperadas(int tid);
 
 TCB_t* retornaExecutando();
 

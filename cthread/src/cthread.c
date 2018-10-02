@@ -3,6 +3,9 @@
 #include "cdata.h"
 #include "ucontext.h"
 #include "escalonador.h"
+#include	<stdio.h>
+#include	<stdlib.h>
+#include 	<math.h>
 
 int __tid = 1;
 
@@ -228,71 +231,124 @@ int cidentify (char *name, int size) {
 
 // --------------------------------------------------------------------------------------------------- //
 
-static void* func5(void) {
-	printf("-----func5: started ->\n");
-	printf("-----func5: cjoin\n");
-	cjoin(1);
-	printf("-----f5: finishing\n");
-	printf("-----func5: returning\n");
+void* fatorial(void *i) {
+     int fat=1, n;
+
+     printf("Arg: %d\n", *(int *)i);
+     n = *(int *)i;
+     for (; n > 1; n-=1) {
+         fat *= n;
+     }
+
+     printf("Fatorial de %d: %d\n", (*(int *)i), fat);
+     printf("Saindo do fatorial\n");
+     return;
 }
 
-static void* func4(void) {
-	printf("----func4: started ->\n");
-	printf("----func4: set prio\n");
-	csetprio(4, 0);
-	printf("----f4: finishing\n");
-	printf("----func4: returning\n");
+void* fibonnaci (void *i) {
+     int fi, fj, fk, k, n;
+     printf("Fibonacci de %d\n", (*(int *)i));
+     n = *(int *)i;
+
+     fi = 0;
+     fj = 1 ;
+     printf ("0 1");
+     for (k = 1; k < n; k++) {
+         fk = fi + fj;
+         fi = fj;
+         fj = fk;
+         printf(" %d", fk);
+     }
+
+     printf("\nSaindo do fibonacci\n");
+     return;
 }
 
-static void* func3(void) {
-	printf("---func3: started ->\n");
-	printf("---func3: set prio\n");
-	csetprio(3,2);
-	printf("---f3: finishing\n");
-	printf("---func3: returning\n");
-}
-
-static void* func2(void) {
-	printf("--func2: started ->\n");
-	printf("--func2: cyield\n");
-	cyield();
-	printf("--f2: finishing\n");
-	printf("--func2: returning\n");
-}
-
-
-static void* func1(void *i) {
-	int erro;
-	printf("-func1: started\n");
-	printf("Param %d\n", i);
-	printf("-func1: blocked waiting for f2\n");
-	//erro = csetprio(1, 2);
-	int tid2 = ccreate(&func2, (void*)&i, 1);
-	int tid3 = ccreate(&func3, (void*)&i, 0);
-	int tid4 = ccreate(&func4, (void*)&i, 2);
-	int tid5 = ccreate(&func5, (void*)&i, 0);
-	cjoin(tid2);
-	printf("-f1: return to f1\n");
-	printf("-func1: returning\n");
-	return;
-}
-
-int main () {
-	char name[60];
-
-	cidentify(name, 60);
-	printf("%s\n", name);
-
+int main(int argc, char **argv) {
+	int id0, id1;
 	int i = 10;
 
-	printf("Iniciando main\n");
+	id0 = ccreate(fatorial, (void *)&i, 2);
+	id1 = ccreate(fibonnaci, (void *)&i, 2);
 
-	int tid = ccreate(&func1, (void*)i, 0);
-	printf("Thread %d criada\n", tid);
-	printf("Retorna para main: bloqueando main após crirar thread 1\n");
-	printf("main: cjoin\n");
-	cjoin(4);
+        printf("Threads fatorial (%d) e Fibonnaci(%d) criadas...\n", id0, id1);
 
-	printf("Main terminou!\n");
-	return 0;
+    printf("Main bloqueia para executar thread 1\n");
+	cjoin(id0);
+	printf("Main bloqueia para executar thread 2\n");
+	cjoin(id1);
+
+	printf("Main retornando para terminar o programa\n");
 }
+
+
+
+
+// static void* func5(void) {
+// 	printf("-----func5: started ->\n");
+// 	printf("-----func5: cjoin\n");
+// 	cjoin(1);
+// 	printf("-----f5: finishing\n");
+// 	printf("-----func5: returning\n");
+// }
+
+// static void* func4(void) {
+// 	printf("----func4: started ->\n");
+// 	printf("----func4: set prio\n");
+// 	csetprio(4, 0);
+// 	printf("----f4: finishing\n");
+// 	printf("----func4: returning\n");
+// }
+
+// static void* func3(void) {
+// 	printf("---func3: started ->\n");
+// 	printf("---func3: set prio\n");
+// 	csetprio(3,2);
+// 	printf("---f3: finishing\n");
+// 	printf("---func3: returning\n");
+// }
+
+// static void* func2(void) {
+// 	printf("--func2: started ->\n");
+// 	printf("--func2: cyield\n");
+// 	cyield();
+// 	printf("--f2: finishing\n");
+// 	printf("--func2: returning\n");
+// }
+
+
+// static void* func1(void *i) {
+// 	int erro;
+// 	printf("-func1: started\n");
+// 	printf("Param %d\n", i);
+// 	printf("-func1: blocked waiting for f2\n");
+// 	//erro = csetprio(1, 2);
+// 	int tid2 = ccreate(&func2, (void*)&i, 1);
+// 	int tid3 = ccreate(&func3, (void*)&i, 0);
+// 	int tid4 = ccreate(&func4, (void*)&i, 2);
+// 	int tid5 = ccreate(&func5, (void*)&i, 0);
+// 	cjoin(tid2);
+// 	printf("-f1: return to f1\n");
+// 	printf("-func1: returning\n");
+// 	return;
+// }
+
+// int main () {
+// 	char name[60];
+
+// 	cidentify(name, 60);
+// 	printf("%s\n", name);
+
+// 	int i = 10;
+
+// 	printf("Iniciando main\n");
+
+// 	int tid = ccreate(&func1, (void*)i, 0);
+// 	printf("Thread %d criada\n", tid);
+// 	printf("Retorna para main: bloqueando main após crirar thread 1\n");
+// 	printf("main: cjoin\n");
+// 	cjoin(4);
+
+// 	printf("Main terminou!\n");
+// 	return 0;
+// }
