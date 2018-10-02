@@ -14,22 +14,33 @@ int inicializaFilas() {
 
 // ----------------------------------------------------------------------------------- //
 
+// int inicializaMain() {
+// 	contexto_main->uc_stack.ss_sp = (char*) malloc(STACK_SIZE * sizeof(char));
+// 	contexto_main->uc_stack.ss_size = STACK_SIZE;
+// 	contexto_main->uc_link = NULL;
+// 	makecontext(contexto_main, (void (*) (void))NULL, 0);
+
+// 	return 0;
+// }
+
+// ----------------------------------------------------------------------------------- //
+
 int insereEmApto(TCB_t *thread) {
 	int prioridade = thread->prio;
-	int success;
+	int sucesso;
 
 	if (prioridade == 0) {
-		success = AppendFila2(&__aptos_prio_0, thread);
+		sucesso = AppendFila2(&__aptos_prio_0, thread);
 	} else if (prioridade == 1) {
-		success = AppendFila2(&__aptos_prio_1, thread);
+		sucesso = AppendFila2(&__aptos_prio_1, thread);
 	} else if (prioridade == 2) {
-		success = AppendFila2(&__aptos_prio_2, thread);
+		sucesso = AppendFila2(&__aptos_prio_2, thread);
 	} else{ 
 		return -1;
 	}
 
 	thread->state = PROCST_APTO;
-	return 0;
+	return sucesso;
 }
 
 // ----------------------------------------------------------------------------------- //
@@ -266,56 +277,74 @@ _Bool executandoLivre() {
 
 // ----------------------------------------------------------------------------------- //
 
-TCB_t* buscaThread(int tid, _Bool *erro, int *emApto) {
+TCB_t* buscaThread(int tid, _Bool *erro, int *fila) {
 	// procura em executando
 	int estado_iterador;
 	TCB_t *tcb_temp;
 	TCB_t *ptr_invalido = NULL;
 
 	*erro = 0;
-	*emApto = -1;
+	*fila = -1;
 
 	estado_iterador = FirstFila2(&__executando);
 	if (estado_iterador == 0) {
 		tcb_temp = GetAtIteratorFila2(&__executando);
 		if (tcb_temp->tid == tid) {
+			*fila = 4;
 			return tcb_temp;
 		}
 	}
 
+	// procura thread em bloqueados
 	estado_iterador = FirstFila2(&__bloqueados);
-	if (estado_iterador == 0) {
-		tcb_temp = GetAtIteratorFila2(&__bloqueados);
-		if (tcb_temp->tid == tid) {
-			return tcb_temp;
+	while (estado_iterador == 0) {
+		if (estado_iterador == 0) {
+			tcb_temp = GetAtIteratorFila2(&__bloqueados);
+			if (tcb_temp->tid == tid) {
+				*fila = 3;
+				return tcb_temp;
+			}
 		}
+		estado_iterador = NextFila2(&__bloqueados);
 	}
 
+	// procura thread em aptos 0
 	estado_iterador = FirstFila2(&__aptos_prio_0);
-	if (estado_iterador == 0) {
-		tcb_temp = GetAtIteratorFila2(&__aptos_prio_0);
-		if (tcb_temp->tid == tid) {
-			*emApto = 0;
-			return tcb_temp;
+	while (estado_iterador == 0) {
+		if (estado_iterador == 0) {
+			tcb_temp = GetAtIteratorFila2(&__aptos_prio_0);
+			if (tcb_temp->tid == tid) {
+				*fila = 0;
+				return tcb_temp;
+			}
 		}
+		estado_iterador = NextFila2(&__aptos_prio_0);
 	}
 
+	// procura thread em aptos 1
 	estado_iterador = FirstFila2(&__aptos_prio_1);
-	if (estado_iterador == 0) {
-		tcb_temp = GetAtIteratorFila2(&__aptos_prio_1);
-		if (tcb_temp->tid == tid) {
-			*emApto = 1;
-			return tcb_temp;
+	while (estado_iterador == 0) {
+		if (estado_iterador == 0) {
+			tcb_temp = GetAtIteratorFila2(&__aptos_prio_1);
+			if (tcb_temp->tid == tid) {
+				*fila = 0;
+				return tcb_temp;
+			}
 		}
+		estado_iterador = NextFila2(&__aptos_prio_1);
 	}
 
+	// procura thread em aptos 2
 	estado_iterador = FirstFila2(&__aptos_prio_2);
-	if (estado_iterador == 0) {
-		tcb_temp = GetAtIteratorFila2(&__aptos_prio_2);
-		if (tcb_temp->tid == tid) {
-			*emApto = 2;
-			return tcb_temp;
+	while (estado_iterador == 0) {
+		if (estado_iterador == 0) {
+			tcb_temp = GetAtIteratorFila2(&__aptos_prio_2);
+			if (tcb_temp->tid == tid) {
+				*fila = 0;
+				return tcb_temp;
+			}
 		}
+		estado_iterador = NextFila2(&__aptos_prio_2);
 	}
 
 	*erro = 1;
@@ -460,3 +489,35 @@ void proximaThread() {
 }
 
 // --------------------------------------------------------------------------------------------------- //
+
+int sincronizaTermino(int tid) {
+	TCB_t *thread_bloq;
+
+	// remove thread do bloqueado
+	thread_bloq = retornaBloqueado();
+	removeDeBloqueado();
+
+	// insere em apto
+	insereEmApto(thread_bloq);
+
+	proximaThread();
+	return 0;
+}
+
+// --------------------------------------------------------------------------------------------------- //
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

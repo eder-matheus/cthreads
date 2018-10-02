@@ -6,6 +6,8 @@
 
 #define STACK_SIZE 131072
 
+
+
 FILA2 __aptos_prio_0;
 FILA2 __aptos_prio_1;
 FILA2 __aptos_prio_2;
@@ -13,6 +15,8 @@ FILA2 __executando;
 FILA2 __bloqueados;
 
 int inicializaFilas();
+
+// int inicualizaMain();
 
 int insereEmApto(TCB_t *thread);
 
@@ -36,7 +40,7 @@ TCB_t* retornaBloqueado();
 
 _Bool executandoLivre();
 
-TCB_t* buscaThread(int tid, _Bool *erro, int *emApto);
+TCB_t* buscaThread(int tid, _Bool *erro, int *fila);
 
 int atualizaPrioridade(int tid, int nova_prio);
 
@@ -45,3 +49,5 @@ int escalonaThread(TCB_t *thread);
 int finalizaThread();
 
 void proximaThread();
+
+int sincronizaTermino();

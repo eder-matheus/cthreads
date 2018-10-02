@@ -6,17 +6,32 @@
 
 #define __NUMBER_OF_ARGS 1
 
-static ucontext_t uctx_main;
+_Bool __filas_inicializadas = 0;
+_Bool __tcb_main_inicializado = 0;
+
+static ucontext_t contexto_main;
 
 int __tid = 1;
-// static void trampoline(int cb, int arg)
-// {
-// 	void *(*real_cb)(void *) = (void *(*)(void *)) cb;
-// 	void *real_arg = arg;
-// 	real_cb(real_arg);
-// }
 
 int ccreate (void* (*start)(void*), void *arg, int prio) {
+	if (!__filas_inicializadas) {
+		inicializaFilas();
+		__filas_inicializadas = 1;
+	}
+
+	if (!__tcb_main_inicializado) {
+		// inicializaMain();
+		TCB_t *mainThread = (TCB_t*) malloc(sizeof(TCB_t));
+		mainThread->tid = __tid;
+		mainThread->state = PROCST_CRIACAO; // Vai direto pro apto
+		mainThread->prio = prio;
+		mainThread->context = contexto_main;
+		mainThread->data = NULL;
+
+		insereEmExecutando(mainThread);
+		__tcb_main_inicializado = 1;
+	}
+
 	int erro;
 	ucontext_t *contexto_fim_de_thread = (ucontext_t *) malloc(sizeof(ucontext_t));
 
@@ -50,13 +65,11 @@ int ccreate (void* (*start)(void*), void *arg, int prio) {
 //	printf("Inicializando tcb\n");
 	TCB_t *tcb = (TCB_t*) malloc(sizeof(TCB_t));
 	tcb->tid = __tid;
-	tcb->state = PROCST_APTO; // Vai direto pro apto
+	tcb->state = PROCST_CRIACAO; // Vai direto pro apto
 	tcb->prio = prio;
 	tcb->context = contexto;
 	tcb->data = NULL;
 	__tid += 1;
-
-	printf("Inserindo tcb no escalonador\n");
 
 	
 	erro = escalonaThread(tcb);
@@ -121,36 +134,75 @@ int csetprio(int tid, int prio) {
 
 int cyield(void) {
 	// Remove thread atual de executando
-	TCB_t *threadAtual;
-	TCB_t *threadParaExec;
+	TCB_t *thread_atual;
+	TCB_t *thread_apta;
 	_Bool sucesso;
 
 	// Busca a thread que está executando e a retira de execucao
-	threadAtual = retornaExecutando();
+	thread_atual = retornaExecutando();
 	removeDeExecutando();
 
 	// Busca a proxima thread apta e a retira da fila de aptos
-	threadParaExec = retornaApto();
+	thread_apta = retornaApto();
 	removeDeApto();
 		
 	// Insere em apto a thread que foi retirada de execucao
-	insereEmApto(threadAtual);
-	sucesso = insereEmExecutando(threadParaExec);
-	if (swapcontext(&threadAtual->context, &threadParaExec->context) == -1){
+	insereEmApto(thread_atual);
+	sucesso = insereEmExecutando(thread_apta);
+	if (swapcontext(&thread_atual->context, &thread_apta->context) == -1) {
 		printf("Erro ao trocar os contextos em cyield\n");
-		sucesso = 0;
+		sucesso = -1;
 	}
 
-	if (!sucesso)
-		return -1;
-
-	return 0;
+	return sucesso;
 }
 
 // --------------------------------------------------------------------------------------------------- //
 
 int cjoin(int tid) {
-	return -1;
+	printf("Iniciando cjoin\n");
+	TCB_t *thread_esperada;
+	TCB_t *thread_atual;
+	TCB_t *thread_apta;
+	_Bool erro;
+	int emApto;
+
+	thread_atual = retornaExecutando();
+	printf("Pegou thread atual\n");
+
+	ucontext_t *contexto_fim_de_thread = (ucontext_t *) malloc(sizeof(ucontext_t));
+
+	if (getcontext(contexto_fim_de_thread) == -1) {
+		printf("getcontext para fim de thread falhou\n");
+		return -1;
+	}
+
+	contexto_fim_de_thread->uc_stack.ss_sp = (char*) malloc(STACK_SIZE * sizeof(char));
+	contexto_fim_de_thread->uc_stack.ss_size = STACK_SIZE;
+	contexto_fim_de_thread->uc_link = NULL;
+	makecontext(contexto_fim_de_thread, (void (*) (void))sincronizaTermino, __NUMBER_OF_ARGS, thread_atual->tid);	
+
+	printf("Cria contexto de call back\n");
+
+	thread_esperada = buscaThread(tid, &erro, &emApto);
+	thread_esperada->context.uc_link = contexto_fim_de_thread;
+
+	printf("Seta novo link para contexto da thread esperada\n");
+
+	// bloqueia thread atual
+	removeDeExecutando();
+	insereEmBloqueado(thread_atual);
+
+	// coloca a proxima thread apta em execucao
+	thread_apta = retornaApto();
+	removeDeApto();
+	insereEmExecutando(thread_apta);
+	if (swapcontext(&thread_atual->context, &thread_apta->context)) {
+		printf("Erro ao trocar os contextos em cjoin\n");
+		return -1;
+	}
+
+	return 0;
 }
 
 // --------------------------------------------------------------------------------------------------- //
@@ -201,8 +253,6 @@ static void* func2(void) {
 }
 
 int main () {
-	inicializaFilas();
-	printf("Terminou de inicializar as filas\n");
 	char name[60];
 
 	cidentify(name, 60);
@@ -216,13 +266,13 @@ int main () {
 	cjoin(tid);
 	cjoin(tid2);
 
-	TCB_t *thread;
-	thread = retornaApto();
+	// TCB_t *thread;
+	// thread = retornaApto();
 
 
-	removeDeApto();
-	insereEmExecutando(thread);
-	swapcontext(&uctx_main, &thread->context);
+	// removeDeApto();
+	// insereEmExecutando(thread);
+	// swapcontext(&contexto_main, &thread->context);
 
 	printf("Main terminou!\n");
 	return 0;
