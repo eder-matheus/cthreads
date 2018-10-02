@@ -28,7 +28,8 @@ int insereEmApto(TCB_t *thread) {
 		return -1;
 	}
 
-	return success;
+	thread->state = PROCST_APTO;
+	return 0;
 }
 
 // ----------------------------------------------------------------------------------- //
@@ -37,6 +38,7 @@ int insereEmExecutando(TCB_t *thread) {
 	int success;
 
 	success = AppendFila2(&__executando, thread);
+	thread->state = PROCST_EXEC;
 	return success;
 }
 
@@ -46,6 +48,7 @@ int insereEmBloqueado(TCB_t *thread) {
 	int success;
 
 	success = AppendFila2(&__bloqueados, thread);
+	thread->state = PROCST_BLOQ;
 	return success;
 }
 
@@ -160,13 +163,13 @@ TCB_t* retornaApto() {
 
 	estado_iterador = FirstFila2(&__aptos_prio_1);
 	if (estado_iterador == 0) { // fila nao vazia
-		thread = GetAtIteratorFila2(&__aptos_prio_0);
+		thread = GetAtIteratorFila2(&__aptos_prio_1);
 		return thread;
 	}
 
 	estado_iterador = FirstFila2(&__aptos_prio_2);
 	if (estado_iterador == 0) { // fila nao vazia
-		thread = GetAtIteratorFila2(&__aptos_prio_0);
+		thread = GetAtIteratorFila2(&__aptos_prio_2);
 		return thread;
 	}
 
@@ -186,70 +189,70 @@ TCB_t* retornaBloqueado() {
 
 // ----------------------------------------------------------------------------------- //
 
-int alternaEntreAptos(TCB_t *thread, int prioAnterior) {
-	int success;
-	int remove;
+// int alternaEntreAptos(TCB_t *thread, int prioAnterior) {
+// 	int success;
+// 	int remove;
 
-	// Encontra a thread na sua fila atual
-	if (prioAnterior == 0) {
-		FirstFila2(&__aptos_prio_0);
-		_Bool encontrou = 0;
-		TCB_t *threadAtual;
+// 	// Encontra a thread na sua fila atual
+// 	if (prioAnterior == 0) {
+// 		FirstFila2(&__aptos_prio_0);
+// 		_Bool encontrou = 0;
+// 		TCB_t *threadAtual;
 
-		while (!encontrou) {
-			threadAtual = GetAtIteratorFila2(&__aptos_prio_0);
-			if (thread->tid == threadAtual->tid) {
-				encontrou = 1;
-			} else {
-				NextFila2(&__aptos_prio_0);
-			}
-		}
-	} else if (prioAnterior == 1) {
-		FirstFila2(&__aptos_prio_1);
-		_Bool encontrou = 0;
-		TCB_t *threadAtual;
+// 		while (!encontrou) {
+// 			threadAtual = GetAtIteratorFila2(&__aptos_prio_0);
+// 			if (thread->tid == threadAtual->tid) {
+// 				encontrou = 1;
+// 			} else {
+// 				NextFila2(&__aptos_prio_0);
+// 			}
+// 		}
+// 	} else if (prioAnterior == 1) {
+// 		FirstFila2(&__aptos_prio_1);
+// 		_Bool encontrou = 0;
+// 		TCB_t *threadAtual;
 		
-		while (!encontrou) {
-			threadAtual = GetAtIteratorFila2(&__aptos_prio_1);
-			if (thread->tid == threadAtual->tid) {
-				encontrou = 1;
-			} else {
-				NextFila2(&__aptos_prio_1);
-			}
-		}
-	} else if (prioAnterior == 2) {
-		FirstFila2(&__aptos_prio_2);
-		_Bool encontrou = 0;
-		TCB_t *threadAtual;
+// 		while (!encontrou) {
+// 			threadAtual = GetAtIteratorFila2(&__aptos_prio_1);
+// 			if (thread->tid == threadAtual->tid) {
+// 				encontrou = 1;
+// 			} else {
+// 				NextFila2(&__aptos_prio_1);
+// 			}
+// 		}
+// 	} else if (prioAnterior == 2) {
+// 		FirstFila2(&__aptos_prio_2);
+// 		_Bool encontrou = 0;
+// 		TCB_t *threadAtual;
 		
-		while (!encontrou) {
-			threadAtual = GetAtIteratorFila2(&__aptos_prio_2);
-			if (thread->tid == threadAtual->tid) {
-				encontrou = 1;
-			} else {
-				NextFila2(&__aptos_prio_2);
-			}
-		}
-	} else {
-		return -1;
-	}
-	// Aqui, a thread a ser movida entre as filas já foi encontrada
-	// e o iterador da fila aponta pra ela
-	if (prioAnterior == 0) {
-		remove = DeleteAtIteratorFila2(&__aptos_prio_0);
-	} else if (prioAnterior == 1) {
-		remove = DeleteAtIteratorFila2(&__aptos_prio_1);
-	} else {
-		remove = DeleteAtIteratorFila2(&__aptos_prio_2);
-	}
+// 		while (!encontrou) {
+// 			threadAtual = GetAtIteratorFila2(&__aptos_prio_2);
+// 			if (thread->tid == threadAtual->tid) {
+// 				encontrou = 1;
+// 			} else {
+// 				NextFila2(&__aptos_prio_2);
+// 			}
+// 		}
+// 	} else {
+// 		return -1;
+// 	}
+// 	// Aqui, a thread a ser movida entre as filas já foi encontrada
+// 	// e o iterador da fila aponta pra ela
+// 	if (prioAnterior == 0) {
+// 		remove = DeleteAtIteratorFila2(&__aptos_prio_0);
+// 	} else if (prioAnterior == 1) {
+// 		remove = DeleteAtIteratorFila2(&__aptos_prio_1);
+// 	} else {
+// 		remove = DeleteAtIteratorFila2(&__aptos_prio_2);
+// 	}
 	
-	// Insere a thread na sua nova fila, de acordo com sua prioridade
-	if (remove == 0 || remove == DELITER_VAZIA) {
-		success = insereEmApto(thread);
-	}
+// 	// Insere a thread na sua nova fila, de acordo com sua prioridade
+// 	if (remove == 0 || remove == DELITER_VAZIA) {
+// 		success = insereEmApto(thread);
+// 	}
 
-	return success;
-}
+// 	return success;
+// }
 
 // ----------------------------------------------------------------------------------- //
 
@@ -380,23 +383,26 @@ int escalonaThread(TCB_t *thread) {
 	threadExec = retornaExecutando();
 
 	if (threadExec != NULL) { // existe thread em execucao
+		// printf("Inserindo em exec");
 		if (thread->prio < threadExec->prio) { // se a thread em execucao tiver prioridade menor do que a criada
 			removeDeExecutando();
 			insereEmExecutando(thread); // insere a nova thread em execucao
 			insereEmApto(threadExec); // insere a antiga no apto
-			if (swapcontext(&threadExec->context, &threadApta->context) == -1) { // troca o contexto para a thread nova
+			if (swapcontext(&threadExec->context, &thread->context) == -1) { // troca o contexto para a thread nova
 				printf("Erro ao trocar os contextos\n");
 				return -1;
 			}
 			return 1;
 		} else {
-			if (insereEmApto(threadApta) != 0) {
+			// printf("Inserindo em apto1");
+			if (insereEmApto(thread) != 0) {
 				printf("Erro ao inserir em apto\n");
 				return -1;
 			}
 		}
 	} else {
-		if (insereEmApto(threadApta) != 0) {
+		// printf("Inserindo em apto");
+		if (insereEmApto(thread) != 0) {
 			printf("Erro ao inserir em apto\n");
 			return -1;
 		}

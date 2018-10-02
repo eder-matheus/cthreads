@@ -32,7 +32,7 @@ TCB_t* retornaApto();
 
 TCB_t* retornaBloqueado();
 
-int alternaEntreAptos(TCB_t *thread, int prioAntiga);
+// int alternaEntreAptos(TCB_t *thread, int prioAntiga);
 
 _Bool executandoLivre();
 

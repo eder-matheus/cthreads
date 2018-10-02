@@ -5,6 +5,9 @@
 #include "escalonador.h"
 
 #define __NUMBER_OF_ARGS 1
+
+static ucontext_t uctx_main;
+
 int __tid = 1;
 // static void trampoline(int cb, int arg)
 // {
@@ -71,41 +74,41 @@ int ccreate (void* (*start)(void*), void *arg, int prio) {
 
 int csetprio(int tid, int prio) {
 	TCB_t *thread;
+	TCB_t *em_apto;
 	_Bool erro = 1;
 	int emApto = -1;
-	int prioAnterior;
 	int sucesso;
 
+	// thread encontrada sempre estará em executando
 	thread = buscaThread(tid, &erro, &emApto);
-	prioAnterior = thread->prio;
-
-	if ()
 
 	if (!erro) {
-		thread->prio = prio; // nova prioridade definida
-		FirstFila2(&__executando);
-		emExecucao = GetAtIteratorFila2(&__executando);
-		if (thread->prio < emExecucao->prio) { // Comparador é <, pois para valores 0 é maior prio e 3 é menor prio
-			// retira "emExecucao" do exec, e coloca a thread
+		if (thread->state != PROCST_EXEC) {
+			printf("Erro: tentativa de modificar a prio de outra thread\n");;
+			return -1;
+		}
 
+		thread->prio = prio; // nova prioridade definida
+		em_apto = retornaApto();
+		
+		if (em_apto->prio < thread->prio) { // Comparador é <, pois para valores 0 é maior prio e 3 é menor prio
+			// retira thread da exec, e coloca a thread em apto
 			int removeErro;
 			int insereErro;
 			removeErro = removeDeExecutando();
 			
 			if (!removeErro) {
-				insereErro = insereEmExecutando(thread);
+				insereErro = insereEmExecutando(em_apto);
+				removeDeApto();
 				if (!insereErro) {
-					sucesso = insereEmApto(exExecucao);
+					sucesso = insereEmApto(thread);
 				}
 			}
 			
-			if (swapcontext(&emExecucao->context, &thread->context) == -1) {
+			if (swapcontext(&thread->context, &em_apto->context) == -1) {
 				printf("Erro ao trocar os contextos\n");
 				return -1;
 			}
-		} else if(prioAnterior != thread->prio && emApto != -1) {
-			// move a thread para a fila de aptos de acordo com a prioridade, caso nao esteja no bloqueado
-			sucesso = alternaEntreAptos(thread, prioAnterior);
 		}
 	} else {
 		sucesso = -1;
@@ -129,11 +132,10 @@ int cyield(void) {
 	// Busca a proxima thread apta e a retira da fila de aptos
 	threadParaExec = retornaApto();
 	removeDeApto();
-	
+		
 	// Insere em apto a thread que foi retirada de execucao
 	insereEmApto(threadAtual);
 	sucesso = insereEmExecutando(threadParaExec);
-	
 	if (swapcontext(&threadAtual->context, &threadParaExec->context) == -1){
 		printf("Erro ao trocar os contextos em cyield\n");
 		sucesso = 0;
@@ -178,47 +180,50 @@ int cidentify (char *name, int size) {
 
 // --------------------------------------------------------------------------------------------------- //
 
-// static void* func1(void) {
-// 	printf("func1: started\n");
-// 	printf("func1: swapcontext(&uctx_func1, &uctx_func2)\n");
-// 	cyield();
-// 	printf("f1: swapcontext\n");
-// 	printf("func1: returning\n");
-// 	return;
-// }
+static void* func1(void) {
+	int erro;
+	printf("func1: started\n");
+	printf("func1: swapcontext(&uctx_func1, &uctx_func2)\n");
+	erro = csetprio(1, 1);
+	if (erro)
+		printf("Deu ruim!!!\n");
+	printf("f1: swapcontext\n");
+	printf("func1: returning\n");
+	return;
+}
 
-// static void* func2(void) {
-// 	printf("func2: started ->\n");
-// 	printf("func2: swapcontext(&uctx_func2, &uctx_func1)\n");
-// 	cyield();
-// 	printf("f2: swapcontext\n");
-// 	printf("func2: returning\n");
-// }
+static void* func2(void) {
+	printf("func2: started ->\n");
+	printf("func2: swapcontext(&uctx_func2, &uctx_func1)\n");
+	cyield();
+	printf("f2: swapcontext\n");
+	printf("func2: returning\n");
+}
 
 int main () {
 	inicializaFilas();
 	printf("Terminou de inicializar as filas\n");
-	// char name[60];
+	char name[60];
 
-	// cidentify(name, 60);
-	// printf("%s\n", name);
+	cidentify(name, 60);
+	printf("%s\n", name);
 
-	// int i;
+	int i;
 
-	// int tid = ccreate(&func1, (void*)&i, 0);
-	// int tid2 = ccreate(&func2, (void*)&i, 0);
+	int tid = ccreate(&func1, (void*)&i, 0);
+	int tid2 = ccreate(&func2, (void*)&i, 0);
 
-	// cjoin(tid);
-	// cjoin(tid2);
+	cjoin(tid);
+	cjoin(tid2);
 
-	// TCB_t *thread;
-	// thread = retornaApto();
+	TCB_t *thread;
+	thread = retornaApto();
 
 
-	// removeDeApto();
-	// insereEmExecutando(thread);
-	// swapcontext(&uctx_main, &thread->context);
+	removeDeApto();
+	insereEmExecutando(thread);
+	swapcontext(&uctx_main, &thread->context);
 
-	// printf("Main terminou!\n");
+	printf("Main terminou!\n");
 	return 0;
 }
