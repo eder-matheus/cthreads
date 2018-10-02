@@ -189,11 +189,20 @@ TCB_t* retornaApto() {
 
 // ----------------------------------------------------------------------------------- //
 
-TCB_t* retornaBloqueado() {
+TCB_t* retornaBloqueado(int tid) {
 	TCB_t *thread;
-	
-	FirstFila2(&__bloqueados);
-	thread = GetAtIteratorFila2(&__bloqueados);
+	int estado_iterador;
+
+	estado_iterador = FirstFila2(&__bloqueados);
+	while (estado_iterador == 0) {
+		thread = GetAtIteratorFila2(&__bloqueados);
+		if (thread->tid == tid) {
+			return thread;
+		} else {
+			thread = NULL;
+		}
+		estado_iterador = NextFila2(&__bloqueados);
+	}
 
 	return thread;
 }
@@ -222,7 +231,7 @@ TCB_t* retornaBloqueado() {
 // 		FirstFila2(&__aptos_prio_1);
 // 		_Bool encontrou = 0;
 // 		TCB_t *threadAtual;
-		
+
 // 		while (!encontrou) {
 // 			threadAtual = GetAtIteratorFila2(&__aptos_prio_1);
 // 			if (thread->tid == threadAtual->tid) {
@@ -235,7 +244,7 @@ TCB_t* retornaBloqueado() {
 // 		FirstFila2(&__aptos_prio_2);
 // 		_Bool encontrou = 0;
 // 		TCB_t *threadAtual;
-		
+
 // 		while (!encontrou) {
 // 			threadAtual = GetAtIteratorFila2(&__aptos_prio_2);
 // 			if (thread->tid == threadAtual->tid) {
@@ -256,7 +265,7 @@ TCB_t* retornaBloqueado() {
 // 	} else {
 // 		remove = DeleteAtIteratorFila2(&__aptos_prio_2);
 // 	}
-	
+
 // 	// Insere a thread na sua nova fila, de acordo com sua prioridade
 // 	if (remove == 0 || remove == DELITER_VAZIA) {
 // 		success = insereEmApto(thread);
@@ -298,12 +307,10 @@ TCB_t* buscaThread(int tid, _Bool *erro, int *fila) {
 	// procura thread em bloqueados
 	estado_iterador = FirstFila2(&__bloqueados);
 	while (estado_iterador == 0) {
-		if (estado_iterador == 0) {
-			tcb_temp = GetAtIteratorFila2(&__bloqueados);
-			if (tcb_temp->tid == tid) {
-				*fila = 3;
-				return tcb_temp;
-			}
+		tcb_temp = GetAtIteratorFila2(&__bloqueados);
+		if (tcb_temp->tid == tid) {
+			*fila = 3;
+			return tcb_temp;
 		}
 		estado_iterador = NextFila2(&__bloqueados);
 	}
@@ -311,12 +318,10 @@ TCB_t* buscaThread(int tid, _Bool *erro, int *fila) {
 	// procura thread em aptos 0
 	estado_iterador = FirstFila2(&__aptos_prio_0);
 	while (estado_iterador == 0) {
-		if (estado_iterador == 0) {
-			tcb_temp = GetAtIteratorFila2(&__aptos_prio_0);
-			if (tcb_temp->tid == tid) {
-				*fila = 0;
-				return tcb_temp;
-			}
+		tcb_temp = GetAtIteratorFila2(&__aptos_prio_0);
+		if (tcb_temp->tid == tid) {
+			*fila = 0;
+			return tcb_temp;
 		}
 		estado_iterador = NextFila2(&__aptos_prio_0);
 	}
@@ -324,12 +329,10 @@ TCB_t* buscaThread(int tid, _Bool *erro, int *fila) {
 	// procura thread em aptos 1
 	estado_iterador = FirstFila2(&__aptos_prio_1);
 	while (estado_iterador == 0) {
-		if (estado_iterador == 0) {
-			tcb_temp = GetAtIteratorFila2(&__aptos_prio_1);
-			if (tcb_temp->tid == tid) {
-				*fila = 0;
-				return tcb_temp;
-			}
+		tcb_temp = GetAtIteratorFila2(&__aptos_prio_1);
+		if (tcb_temp->tid == tid) {
+			*fila = 0;
+			return tcb_temp;
 		}
 		estado_iterador = NextFila2(&__aptos_prio_1);
 	}
@@ -337,12 +340,10 @@ TCB_t* buscaThread(int tid, _Bool *erro, int *fila) {
 	// procura thread em aptos 2
 	estado_iterador = FirstFila2(&__aptos_prio_2);
 	while (estado_iterador == 0) {
-		if (estado_iterador == 0) {
-			tcb_temp = GetAtIteratorFila2(&__aptos_prio_2);
-			if (tcb_temp->tid == tid) {
-				*fila = 0;
-				return tcb_temp;
-			}
+		tcb_temp = GetAtIteratorFila2(&__aptos_prio_2);
+		if (tcb_temp->tid == tid) {
+			*fila = 0;
+			return tcb_temp;
 		}
 		estado_iterador = NextFila2(&__aptos_prio_2);
 	}
@@ -493,9 +494,14 @@ void proximaThread() {
 
 int sincronizaTermino(int tid) {
 	TCB_t *thread_bloq;
+	printf("Desbloqueando thread %d\n", tid);
 
 	// remove thread do bloqueado
-	thread_bloq = retornaBloqueado();
+	thread_bloq = retornaBloqueado(tid);
+	if (thread_bloq == NULL) {
+		printf("Erro: thread %d nao encontrada\n", tid);
+		return -1;
+	}
 	removeDeBloqueado();
 	printf("Thread %d retornada de bloq\n", thread_bloq->tid);
 

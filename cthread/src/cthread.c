@@ -25,7 +25,7 @@ int ccreate (void* (*start)(void*), void *arg, int prio) {
 		TCB_t *mainThread = (TCB_t*) malloc(sizeof(TCB_t));
 		mainThread->tid = 0;
 		mainThread->state = PROCST_CRIACAO; // Vai direto pro apto
-		mainThread->prio = 1;
+		mainThread->prio = 2;
 		mainThread->context = contexto_main;
 		mainThread->data = NULL;
 
@@ -169,8 +169,6 @@ int cjoin(int tid) {
 	int emApto;
 
 	thread_atual = retornaExecutando();
-	printf("Pegou thread atual: %d\n", thread_atual->tid);
-
 
 	ucontext_t *contexto_fim_de_thread = (ucontext_t *) malloc(sizeof(ucontext_t));
 
@@ -179,10 +177,13 @@ int cjoin(int tid) {
 		return -1;
 	}
 
-	printf("Busca thread para esperar\n");
 	thread_esperada = buscaThread(tid, &erro, &emApto);
-	printf("Encontrou thread %d\n", thread_esperada->tid);
 	
+	if (erro) {
+		printf("Thread de tid %d nao encontrada!\n", tid);
+		return -1;
+	}
+
 	makecontext(thread_esperada->context.uc_link, (void (*) (void))sincronizaTermino, __NUMBER_OF_ARGS, thread_atual->tid);	
 
 	// bloqueia thread atual
@@ -191,7 +192,6 @@ int cjoin(int tid) {
 
 	// coloca a proxima thread apta em execucao
 	thread_apta = retornaApto();
-	printf("Thread %d vai pra exec\n", thread_apta->tid);
 	removeDeApto();
 	insereEmExecutando(thread_apta);
 	if (swapcontext(&thread_atual->context, &thread_apta->context)) {
@@ -229,25 +229,34 @@ int cidentify (char *name, int size) {
 
 // --------------------------------------------------------------------------------------------------- //
 
-static void* func2(void) {
-	printf("func2: started ->\n");
-	printf("func2: swapcontext(&uctx_func2, &uctx_func1)\n");
+static void* func3(void) {
+	printf("---func3: started ->\n");
+	printf("---func3: runnig\n");
 	//cyield();
-	printf("f2: swapcontext\n");
-	printf("func2: returning\n");
+	printf("---f3: finishing\n");
+	printf("---func3: returning\n");
+}
+
+static void* func2(void) {
+	printf("--func2: started ->\n");
+	printf("--func2: running\n");
+	//cyield();
+	printf("--f2: finishing\n");
+	printf("--func2: returning\n");
 }
 
 
 static void* func1(void) {
 	int i;
 	int erro;
-	printf("func1: started\n");
-	printf("func1: swapcontext(&uctx_func1, &uctx_func2)\n");
+	printf("-func1: started\n");
+	printf("-func1: blocked waiting for f2\n");
 	//erro = csetprio(1, 2);
-	int tid2 = ccreate(&func2, (void*)&i, 0);
+	int tid2 = ccreate(&func2, (void*)&i, 1);
+	int tid3 = ccreate(&func3, (void*)&i, 0);
 	cjoin(tid2);
-	printf("f1: swapcontext\n");
-	printf("func1: returning\n");
+	printf("-f1: return to f1\n");
+	printf("-func1: returning\n");
 	return;
 }
 
