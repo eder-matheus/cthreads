@@ -261,10 +261,10 @@ static void* func2(void) {
 }
 
 
-static void* func1(void) {
-	int i;
+static void* func1(void *i) {
 	int erro;
 	printf("-func1: started\n");
+	printf("Param %d\n", i);
 	printf("-func1: blocked waiting for f2\n");
 	//erro = csetprio(1, 2);
 	int tid2 = ccreate(&func2, (void*)&i, 1);
@@ -283,11 +283,11 @@ int main () {
 	cidentify(name, 60);
 	printf("%s\n", name);
 
-	int i;
+	int i = 10;
 
 	printf("Iniciando main\n");
 
-	int tid = ccreate(&func1, (void*)&i, 0);
+	int tid = ccreate(&func1, (void*)i, 0);
 	printf("Thread %d criada\n", tid);
 	printf("Retorna para main: bloqueando main após crirar thread 1\n");
 	printf("main: cjoin\n");
