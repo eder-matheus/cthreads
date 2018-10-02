@@ -5,8 +5,7 @@
 #include "cdata.h"
 
 #define STACK_SIZE 131072
-
-
+#define __NUMBER_OF_ARGS 1
 
 FILA2 __aptos_prio_0;
 FILA2 __aptos_prio_1;
@@ -15,9 +14,11 @@ FILA2 __executando;
 FILA2 __bloqueados;
 FILA2 __threads_esperadas;
 
+int inicializaEscalonador();
+
 int inicializaFilas();
 
-// int inicualizaMain();
+int inicializaMain();
 
 int insereEmApto(TCB_t *thread);
 

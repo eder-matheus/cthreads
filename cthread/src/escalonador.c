@@ -1,7 +1,29 @@
 #include "escalonador.h"
 #include "support.h"
 
+_Bool __filas_inicializadas = 0;
+_Bool __tcb_main_inicializado = 0;
+TCB_t *tcb_main = NULL;
+
+int inicializaEscalonador() {
+	int sucesso = 0;
+
+	if (__filas_inicializadas && __tcb_main_inicializado)
+		return sucesso;
+
+	sucesso += inicializaFilas();
+	sucesso += inicializaMain();
+
+	return sucesso;
+}
+
+// ----------------------------------------------------------------------------------- //
+
 int inicializaFilas() {
+	if (__filas_inicializadas == 1) {
+		return 0;
+	}
+
 	int retorno = 0;
 	retorno += CreateFila2(&__aptos_prio_0);
 	retorno += CreateFila2(&__aptos_prio_1);
@@ -9,96 +31,114 @@ int inicializaFilas() {
 	retorno += CreateFila2(&__executando);
 	retorno += CreateFila2(&__bloqueados);
 	retorno += CreateFila2(&__threads_esperadas);
+	__filas_inicializadas = 1;
 
 	return retorno;
 }
 
 // ----------------------------------------------------------------------------------- //
 
-// int inicializaMain() {
-// 	contexto_main->uc_stack.ss_sp = (char*) malloc(STACK_SIZE * sizeof(char));
-// 	contexto_main->uc_stack.ss_size = STACK_SIZE;
-// 	contexto_main->uc_link = NULL;
-// 	makecontext(contexto_main, (void (*) (void))NULL, 0);
-
-// 	return 0;
-// }
-
-// ----------------------------------------------------------------------------------- //
-
-int insereEmApto(TCB_t *thread) {
-	int prioridade = thread->prio;
-	int sucesso;
-
-	if (prioridade == 0) {
-		sucesso = AppendFila2(&__aptos_prio_0, thread);
-	} else if (prioridade == 1) {
-		sucesso = AppendFila2(&__aptos_prio_1, thread);
-	} else if (prioridade == 2) {
-		sucesso = AppendFila2(&__aptos_prio_2, thread);
-	} else{ 
-		return -1;
+int inicializaMain() {
+	if (__tcb_main_inicializado == 1) {
+		return 0;
 	}
 
-	thread->state = PROCST_APTO;
-	return sucesso;
+	int sucesso = 0;
+	tcb_main = (TCB_t*) malloc(sizeof(TCB_t));
+
+	if (getcontext(&(tcb_main->context)) == 0) {
+		tcb_main->tid = 0;
+		tcb_main->state = PROCST_CRIACAO; // Vai direto pro apto
+		tcb_main->prio = 2;
+		tcb_main->context.uc_stack.ss_sp = (char*) malloc(STACK_SIZE * sizeof(char));
+		tcb_main->context.uc_stack.ss_size = STACK_SIZE;
+		tcb_main->context.uc_link = NULL;
+		tcb_main->data = NULL;
+
+		sucesso = insereEmExecutando(tcb_main);
+		__tcb_main_inicializado = 1;
+	} else {
+		printf("getcontext error\n");
+	}
+
+		return sucesso;
 }
 
 // ----------------------------------------------------------------------------------- //
 
-int insereEmExecutando(TCB_t *thread) {
-	int sucesso;
+	int insereEmApto(TCB_t *thread) {
+		int prioridade = thread->prio;
+		int sucesso;
 
-	sucesso = AppendFila2(&__executando, thread);
-	thread->state = PROCST_EXEC;
-	return sucesso;
-}
+		if (prioridade == 0) {
+			sucesso = AppendFila2(&__aptos_prio_0, thread);
+		} else if (prioridade == 1) {
+			sucesso = AppendFila2(&__aptos_prio_1, thread);
+		} else if (prioridade == 2) {
+			sucesso = AppendFila2(&__aptos_prio_2, thread);
+		} else{ 
+			return -1;
+		}
 
-// ----------------------------------------------------------------------------------- //
-
-int insereEmBloqueado(TCB_t *thread) {
-	int sucesso;
-
-	sucesso = AppendFila2(&__bloqueados, thread);
-	thread->state = PROCST_BLOQ;
-	return sucesso;
-}
-
-// ----------------------------------------------------------------------------------- //
-
-int insereEmThreadsEsperadas(int *tid) {
-	int sucesso;
-
-	sucesso = AppendFila2(&__threads_esperadas, tid);
-	return sucesso;
-}
+		thread->state = PROCST_APTO;
+		return sucesso;
+	}
 
 // ----------------------------------------------------------------------------------- //
 
-int removeDeExecutando() {
-	int estado_executando;
-	int estado_iterador;
-	estado_iterador = FirstFila2(&__executando);
-	if (estado_iterador == 0) {
-		estado_executando = DeleteAtIteratorFila2(&__executando);
+	int insereEmExecutando(TCB_t *thread) {
+		int sucesso;
+
+		sucesso = AppendFila2(&__executando, thread);
+		thread->state = PROCST_EXEC;
+		return sucesso;
+	}
+
+// ----------------------------------------------------------------------------------- //
+
+	int insereEmBloqueado(TCB_t *thread) {
+		int sucesso;
+
+		sucesso = AppendFila2(&__bloqueados, thread);
+		thread->state = PROCST_BLOQ;
+		return sucesso;
+	}
+
+// ----------------------------------------------------------------------------------- //
+
+	int insereEmThreadsEsperadas(int *tid) {
+		int sucesso;
+
+		sucesso = AppendFila2(&__threads_esperadas, tid);
+		return sucesso;
+	}
+
+// ----------------------------------------------------------------------------------- //
+
+	int removeDeExecutando() {
+		int estado_executando;
+		int estado_iterador;
 		estado_iterador = FirstFila2(&__executando);
-	}
-	
-	if (estado_executando != 0 && estado_iterador == 0) {
-		printf ("Erro ao retirar de executando: fila nao esta vazia\n");
-		return -1;
-	}
+		if (estado_iterador == 0) {
+			estado_executando = DeleteAtIteratorFila2(&__executando);
+			estado_iterador = FirstFila2(&__executando);
+		}
 
-	return 0;
-}
+		if (estado_executando != 0 && estado_iterador == 0) {
+			printf ("Erro ao retirar de executando: fila nao esta vazia\n");
+			return -1;
+		}
+
+		return 0;
+	}
 
 // ----------------------------------------------------------------------------------- //
 
-int removeDeApto() {
-	int estado_apto;
-	int estado_iterador;
+	int removeDeApto() {
+		int estado_apto;
+		int estado_iterador;
 
-	estado_iterador = FirstFila2(&__aptos_prio_0);
+		estado_iterador = FirstFila2(&__aptos_prio_0);
 	if (estado_iterador == 0) { // fila nao vazia
 		estado_apto = DeleteAtIteratorFila2(&__aptos_prio_0);
 		if (estado_apto == 0 || estado_apto == DELITER_VAZIA) {
@@ -475,14 +515,12 @@ int escalonaThread(TCB_t *thread) {
 			}
 			return 0;
 		} else {
-			// printf("Inserindo em apto1");
 			if (insereEmApto(thread) != 0) {
 				printf("Erro ao inserir em apto\n");
 				return -1;
 			}
 		}
 	} else {
-		// printf("Inserindo em apto");
 		if (insereEmApto(thread) != 0) {
 			printf("Erro ao inserir em apto\n");
 			return -1;

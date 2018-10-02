@@ -4,38 +4,19 @@
 #include "ucontext.h"
 #include "escalonador.h"
 
-#define __NUMBER_OF_ARGS 1
-
-_Bool __filas_inicializadas = 0;
-_Bool __tcb_main_inicializado = 0;
-
-static ucontext_t contexto_main;
-
 int __tid = 1;
 
 int ccreate (void* (*start)(void*), void *arg, int prio) {
-	if (!__filas_inicializadas) {
-		inicializaFilas();
-		__filas_inicializadas = 1;
-	}
-
-	if (!__tcb_main_inicializado) {
-		// inicializaMain();
-		TCB_t *mainThread = (TCB_t*) malloc(sizeof(TCB_t));
-		mainThread->tid = 0;
-		mainThread->state = PROCST_CRIACAO; // Vai direto pro apto
-		mainThread->prio = 2;
-		mainThread->context = contexto_main;
-		mainThread->data = NULL;
-
-		insereEmExecutando(mainThread);
-		__tcb_main_inicializado = 1;
+	if (inicializaEscalonador() != 0) {
+		printf("Erro ao inicializar escalonador\n");
+		return -1;
 	}
 
 	int erro;
 	ucontext_t *contexto_fim_de_thread = (ucontext_t *) malloc(sizeof(ucontext_t));
 
 	if (prio < 0 || prio > 2) {
+		printf("Erro em ccreate: prioridade invalida\n");
 		return -1;
 	}
 
@@ -50,19 +31,19 @@ int ccreate (void* (*start)(void*), void *arg, int prio) {
 		return -1;
 	}
 
-//	printf("Inicializando contexto para fim de thread\n");
+	// Inicializando contexto para fim de thread
 	contexto_fim_de_thread->uc_stack.ss_sp = (char*) malloc(STACK_SIZE * sizeof(char));
 	contexto_fim_de_thread->uc_stack.ss_size = STACK_SIZE;
 	contexto_fim_de_thread->uc_link = NULL;
 	makecontext(contexto_fim_de_thread, (void (*) (void))finalizaThread, 0);	
 
-//	printf("Inicializando contexto\n");
+	// Inicializando contexto para thread criada
 	contexto.uc_stack.ss_sp = (char*) malloc(STACK_SIZE * sizeof(char));
 	contexto.uc_stack.ss_size = STACK_SIZE;
 	contexto.uc_link = contexto_fim_de_thread;
 	makecontext(&contexto, (void (*) (void))start, __NUMBER_OF_ARGS, (void *)arg);
 
-//	printf("Inicializando tcb\n");
+	// Inicializando tcb para thread criada
 	TCB_t *tcb = (TCB_t*) malloc(sizeof(TCB_t));
 	tcb->tid = __tid;
 	tcb->state = PROCST_CRIACAO; // Vai direto pro apto
@@ -85,6 +66,11 @@ int ccreate (void* (*start)(void*), void *arg, int prio) {
 // --------------------------------------------------------------------------------------------------- //
 
 int csetprio(int tid, int prio) {
+	if (inicializaEscalonador() != 0) {
+		printf("Erro ao inicializar escalonador\n");
+		return -1;
+	}
+
 	TCB_t *thread;
 	TCB_t *em_apto;
 	int sucesso;
@@ -94,7 +80,7 @@ int csetprio(int tid, int prio) {
 	
 	if (thread != NULL) {
 		if (thread->state != PROCST_EXEC) {
-			printf("Erro em csetprio: tentativa de modificar a prio de outra thread\n");
+			printf("Erro em csetprio: thread encontrada nao esta em exec\n");
 			return -1;
 		}
 
@@ -131,6 +117,11 @@ int csetprio(int tid, int prio) {
 // --------------------------------------------------------------------------------------------------- //
 
 int cyield(void) {
+	if (inicializaEscalonador() != 0) {
+		printf("Erro ao inicializar escalonador\n");
+		return -1;
+	}
+
 	// Remove thread atual de executando
 	TCB_t *thread_atual;
 	TCB_t *thread_apta;
@@ -158,14 +149,21 @@ int cyield(void) {
 // --------------------------------------------------------------------------------------------------- //
 
 int cjoin(int tid) {
+	if (inicializaEscalonador() != 0) {
+		printf("Erro ao inicializar escalonador\n");
+		return -1;
+	}
+
 	TCB_t *thread_esperada;
 	TCB_t *thread_atual;
 	TCB_t *thread_apta;
 	_Bool erro;
 	int emApto;
 
+	// Busca, na lista de threads que estao sendo esperadas, a thread passada atualmente
 	_Bool thread_ja_eperada = buscaThreadEsperada(tid);
 
+	// Se a thread passada ja esta sendo esperada, termina a exec da cjoin
 	if (thread_ja_eperada == 1) {
 		printf("Erro em cjoin: thread %d já é esperada por outra thread\n", tid);
 		return -1;
@@ -173,13 +171,8 @@ int cjoin(int tid) {
 
 	thread_atual = retornaExecutando();
 
-	ucontext_t *contexto_fim_de_thread = (ucontext_t *) malloc(sizeof(ucontext_t));
-
-	if (getcontext(contexto_fim_de_thread) == -1) {
-		printf("getcontext para fim de thread falhou\n");
-		return -1;
-	}
-
+	
+	// Modifica contexto da thread esperada para sincronizar seu termino
 	thread_esperada = buscaThread(tid, &erro, &emApto);
 	
 	if (erro) {
@@ -295,6 +288,7 @@ int main () {
 	printf("Iniciando main\n");
 
 	int tid = ccreate(&func1, (void*)&i, 0);
+	printf("Thread %d criada\n", tid);
 	printf("Retorna para main: bloqueando main após crirar thread 1\n");
 	printf("main: cjoin\n");
 	cjoin(4);
