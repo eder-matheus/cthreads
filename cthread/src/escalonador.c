@@ -468,11 +468,12 @@ int finalizaThread() {
 // --------------------------------------------------------------------------------------------------- //
 
 void proximaThread() {
-	TCB_t *proximaThread;
+	TCB_t *proxima_thread;
 	int sucesso;
 
-	proximaThread = retornaApto();
-	if (proximaThread == NULL) {
+	proxima_thread = retornaApto();
+	printf("Thread %d retornada de apto\n", proxima_thread->tid);
+	if (proxima_thread == NULL) {
 		printf("Nao ha mais threads em apto\n");
 		return;
 	}
@@ -481,11 +482,11 @@ void proximaThread() {
 	removeDeApto();
 	
 	// e a insere em execucao
-	sucesso = insereEmExecutando(proximaThread);
+	sucesso = insereEmExecutando(proxima_thread);
 
 	// executa a proxima thread "setando" seu contexto
 	if (sucesso == 0)
-		setcontext(&proximaThread->context);
+		setcontext(&proxima_thread->context);
 }
 
 // --------------------------------------------------------------------------------------------------- //
@@ -496,6 +497,7 @@ int sincronizaTermino(int tid) {
 	// remove thread do bloqueado
 	thread_bloq = retornaBloqueado();
 	removeDeBloqueado();
+	printf("Thread %d retornada de bloq\n", thread_bloq->tid);
 
 	// insere em apto
 	insereEmApto(thread_bloq);
