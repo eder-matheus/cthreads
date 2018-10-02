@@ -13,6 +13,7 @@ FILA2 __aptos_prio_1;
 FILA2 __aptos_prio_2;
 FILA2 __executando;
 FILA2 __bloqueados;
+FILA2 __threads_esperadas;
 
 int inicializaFilas();
 
@@ -24,11 +25,15 @@ int insereEmExecutando(TCB_t *thread);
 
 int insereEmBloqueado(TCB_t *thread);
 
+int insereEmThreadsEsperadas(int *tid);
+
 int removeDeExecutando();
 
 int removeDeApto();
 
-int removeDeBloqueado();
+int removeDeBloqueado(TCB_t *thread);
+
+int removeDeThreadEsperada(int tid);
 
 TCB_t* retornaExecutando();
 
@@ -41,6 +46,8 @@ TCB_t* retornaBloqueado(int tid);
 _Bool executandoLivre();
 
 TCB_t* buscaThread(int tid, _Bool *erro, int *fila);
+
+_Bool buscaThreadEsperada(int tid);
 
 int atualizaPrioridade(int tid, int nova_prio);
 

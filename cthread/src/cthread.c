@@ -14,7 +14,6 @@ static ucontext_t contexto_main;
 int __tid = 1;
 
 int ccreate (void* (*start)(void*), void *arg, int prio) {
-	printf("Criando thread\n");
 	if (!__filas_inicializadas) {
 		inicializaFilas();
 		__filas_inicializadas = 1;
@@ -72,7 +71,6 @@ int ccreate (void* (*start)(void*), void *arg, int prio) {
 	tcb->data = NULL;
 	__tid += 1;
 
-	
 	erro = escalonaThread(tcb);
 
 	if (!erro) {
@@ -161,12 +159,18 @@ int cyield(void) {
 // --------------------------------------------------------------------------------------------------- //
 
 int cjoin(int tid) {
-	printf("Iniciando cjoin\n");
 	TCB_t *thread_esperada;
 	TCB_t *thread_atual;
 	TCB_t *thread_apta;
 	_Bool erro;
 	int emApto;
+
+	_Bool thread_ja_eperada = buscaThreadEsperada(tid);
+
+	if (thread_ja_eperada == 1) {
+		printf("Erro em cjoin: thread %d já é esperada por outra thread\n", tid);
+		return -1;
+	}
 
 	thread_atual = retornaExecutando();
 
@@ -194,6 +198,9 @@ int cjoin(int tid) {
 	thread_apta = retornaApto();
 	removeDeApto();
 	insereEmExecutando(thread_apta);
+
+	insereEmThreadsEsperadas(&thread_esperada->tid);
+
 	if (swapcontext(&thread_atual->context, &thread_apta->context)) {
 		printf("Erro ao trocar os contextos em cjoin\n");
 		return -1;
@@ -229,18 +236,33 @@ int cidentify (char *name, int size) {
 
 // --------------------------------------------------------------------------------------------------- //
 
+static void* func5(void) {
+	printf("-----func5: started ->\n");
+	printf("-----func5: cjoin\n");
+	cjoin(1);
+	printf("-----f5: finishing\n");
+	printf("-----func5: returning\n");
+}
+
+static void* func4(void) {
+	printf("----func4: started ->\n");
+	printf("----func4: set prio\n");
+	csetprio(4, 0);
+	printf("----f4: finishing\n");
+	printf("----func4: returning\n");
+}
+
 static void* func3(void) {
 	printf("---func3: started ->\n");
 	printf("---func3: runnig\n");
-	//cyield();
 	printf("---f3: finishing\n");
 	printf("---func3: returning\n");
 }
 
 static void* func2(void) {
 	printf("--func2: started ->\n");
-	printf("--func2: running\n");
-	//cyield();
+	printf("--func2: cyield\n");
+	cyield();
 	printf("--f2: finishing\n");
 	printf("--func2: returning\n");
 }
@@ -254,6 +276,8 @@ static void* func1(void) {
 	//erro = csetprio(1, 2);
 	int tid2 = ccreate(&func2, (void*)&i, 1);
 	int tid3 = ccreate(&func3, (void*)&i, 0);
+	int tid4 = ccreate(&func4, (void*)&i, 2);
+	int tid5 = ccreate(&func5, (void*)&i, 0);
 	cjoin(tid2);
 	printf("-f1: return to f1\n");
 	printf("-func1: returning\n");
@@ -268,17 +292,12 @@ int main () {
 
 	int i;
 
+	printf("Iniciando main\n");
+
 	int tid = ccreate(&func1, (void*)&i, 0);
-	//int tid2 = ccreate(&func2, (void*)&i, 0);
-
-
-	// TCB_t *thread;
-	// thread = retornaApto();
-
-
-	// removeDeApto();
-	// insereEmExecutando(thread);
-	// swapcontext(&contexto_main, &thread->context);
+	printf("Retorna para main: bloqueando main após crirar thread 1\n");
+	printf("main: cjoin\n");
+	cjoin(4);
 
 	printf("Main terminou!\n");
 	return 0;
