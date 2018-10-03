@@ -61,84 +61,89 @@ int inicializaMain() {
 		printf("getcontext error\n");
 	}
 
-		return sucesso;
+	return sucesso;
 }
 
 // ----------------------------------------------------------------------------------- //
 
-	int insereEmApto(TCB_t *thread) {
-		int prioridade = thread->prio;
-		int sucesso;
+int insereEmApto(TCB_t *thread) {
+	int prioridade = thread->prio;
+	int sucesso;
 
-		if (prioridade == 0) {
-			sucesso = AppendFila2(&__aptos_prio_0, thread);
-		} else if (prioridade == 1) {
-			sucesso = AppendFila2(&__aptos_prio_1, thread);
-		} else if (prioridade == 2) {
-			sucesso = AppendFila2(&__aptos_prio_2, thread);
-		} else{ 
-			return -1;
-		}
-
-		thread->state = PROCST_APTO;
-		return sucesso;
+	if (prioridade == 0) {
+		sucesso = AppendFila2(&__aptos_prio_0, thread);
+	} else if (prioridade == 1) {
+		sucesso = AppendFila2(&__aptos_prio_1, thread);
+	} else if (prioridade == 2) {
+		sucesso = AppendFila2(&__aptos_prio_2, thread);
+	} else{ 
+		printf("Erro: prioridade da thread invalida\n");
+		return -1;
 	}
+
+	thread->state = PROCST_APTO;
+
+	return sucesso;
+}
 
 // ----------------------------------------------------------------------------------- //
 
-	int insereEmExecutando(TCB_t *thread) {
-		int sucesso;
+int insereEmExecutando(TCB_t *thread) {
+	int sucesso;
 
-		sucesso = AppendFila2(&__executando, thread);
-		thread->state = PROCST_EXEC;
-		return sucesso;
-	}
+	sucesso = AppendFila2(&__executando, thread);
+	thread->state = PROCST_EXEC;
 
-// ----------------------------------------------------------------------------------- //
-
-	int insereEmBloqueado(TCB_t *thread) {
-		int sucesso;
-
-		sucesso = AppendFila2(&__bloqueados, thread);
-		thread->state = PROCST_BLOQ;
-		return sucesso;
-	}
+	return sucesso;
+}
 
 // ----------------------------------------------------------------------------------- //
 
-	int insereEmThreadsEsperadas(int *tid) {
-		int sucesso;
+int insereEmBloqueado(TCB_t *thread) {
+	int sucesso;
 
-		sucesso = AppendFila2(&__threads_esperadas, tid);
-		return sucesso;
-	}
+	sucesso = AppendFila2(&__bloqueados, thread);
+	thread->state = PROCST_BLOQ;
+
+	return sucesso;
+}
 
 // ----------------------------------------------------------------------------------- //
 
-	int removeDeExecutando() {
-		int estado_executando;
-		int estado_iterador;
+int insereEmThreadsEsperadas(int *tid) {
+	int sucesso;
+
+	sucesso = AppendFila2(&__threads_esperadas, tid);
+
+	return sucesso;
+}
+
+// ----------------------------------------------------------------------------------- //
+
+int removeDeExecutando() {
+	int estado_executando;
+	int estado_iterador;
+	estado_iterador = FirstFila2(&__executando);
+	if (estado_iterador == 0) {
+		estado_executando = DeleteAtIteratorFila2(&__executando);
 		estado_iterador = FirstFila2(&__executando);
-		if (estado_iterador == 0) {
-			estado_executando = DeleteAtIteratorFila2(&__executando);
-			estado_iterador = FirstFila2(&__executando);
-		}
-
-		if (estado_executando != 0 && estado_iterador == 0) {
-			printf ("Erro ao retirar de executando: fila nao esta vazia\n");
-			return -1;
-		}
-
-		return 0;
 	}
+
+	if (estado_executando != 0 && estado_iterador == 0) {
+		printf ("Erro ao retirar de executando: fila nao esta vazia\n");
+		return -1;
+	}
+
+	return 0;
+}
 
 // ----------------------------------------------------------------------------------- //
 
-	int removeDeApto() {
-		int estado_apto;
-		int estado_iterador;
+int removeDeApto() {
+	int estado_apto;
+	int estado_iterador;
 
-		estado_iterador = FirstFila2(&__aptos_prio_0);
+	estado_iterador = FirstFila2(&__aptos_prio_0);
 	if (estado_iterador == 0) { // fila nao vazia
 		estado_apto = DeleteAtIteratorFila2(&__aptos_prio_0);
 		if (estado_apto == 0 || estado_apto == DELITER_VAZIA) {
@@ -279,73 +284,6 @@ TCB_t* retornaBloqueado(int tid) {
 
 	return thread;
 }
-
-// ----------------------------------------------------------------------------------- //
-
-// int alternaEntreAptos(TCB_t *thread, int prioAnterior) {
-// 	int success;
-// 	int remove;
-
-// 	// Encontra a thread na sua fila atual
-// 	if (prioAnterior == 0) {
-// 		FirstFila2(&__aptos_prio_0);
-// 		_Bool encontrou = 0;
-// 		TCB_t *threadAtual;
-
-// 		while (!encontrou) {
-// 			threadAtual = GetAtIteratorFila2(&__aptos_prio_0);
-// 			if (thread->tid == threadAtual->tid) {
-// 				encontrou = 1;
-// 			} else {
-// 				NextFila2(&__aptos_prio_0);
-// 			}
-// 		}
-// 	} else if (prioAnterior == 1) {
-// 		FirstFila2(&__aptos_prio_1);
-// 		_Bool encontrou = 0;
-// 		TCB_t *threadAtual;
-
-// 		while (!encontrou) {
-// 			threadAtual = GetAtIteratorFila2(&__aptos_prio_1);
-// 			if (thread->tid == threadAtual->tid) {
-// 				encontrou = 1;
-// 			} else {
-// 				NextFila2(&__aptos_prio_1);
-// 			}
-// 		}
-// 	} else if (prioAnterior == 2) {
-// 		FirstFila2(&__aptos_prio_2);
-// 		_Bool encontrou = 0;
-// 		TCB_t *threadAtual;
-
-// 		while (!encontrou) {
-// 			threadAtual = GetAtIteratorFila2(&__aptos_prio_2);
-// 			if (thread->tid == threadAtual->tid) {
-// 				encontrou = 1;
-// 			} else {
-// 				NextFila2(&__aptos_prio_2);
-// 			}
-// 		}
-// 	} else {
-// 		return -1;
-// 	}
-// 	// Aqui, a thread a ser movida entre as filas já foi encontrada
-// 	// e o iterador da fila aponta pra ela
-// 	if (prioAnterior == 0) {
-// 		remove = DeleteAtIteratorFila2(&__aptos_prio_0);
-// 	} else if (prioAnterior == 1) {
-// 		remove = DeleteAtIteratorFila2(&__aptos_prio_1);
-// 	} else {
-// 		remove = DeleteAtIteratorFila2(&__aptos_prio_2);
-// 	}
-
-// 	// Insere a thread na sua nova fila, de acordo com sua prioridade
-// 	if (remove == 0 || remove == DELITER_VAZIA) {
-// 		success = insereEmApto(thread);
-// 	}
-
-// 	return success;
-// }
 
 // ----------------------------------------------------------------------------------- //
 
@@ -521,10 +459,8 @@ int escalonaThread(TCB_t *thread) {
 			}
 		}
 	} else {
-		if (insereEmApto(thread) != 0) {
-			printf("Erro ao inserir em apto\n");
-			return -1;
-		}
+		printf("Erro: nao ha thread em exec\n");
+		return -1;		
 	}
 
 	return 0;
@@ -537,10 +473,12 @@ int finalizaThread() {
 
 	threadFinalizada = retornaExecutando();
 	if (threadFinalizada == NULL) {
+		printf("Erro em finalizaThread: nao encontrou thread em executando\n");
 		return -1;
 	}
 	// Liberação das estruturas inicializadas para a criação da thread
-	if (DeleteAtIteratorFila2(&__executando) != 0) {
+	if (removeDeExecutando() != 0) {
+		printf("Erro ao retirar thread finalizada de executando\n");
 		return -1;
 	}
 
@@ -558,14 +496,13 @@ int finalizaThread() {
 // --------------------------------------------------------------------------------------------------- //
 
 void proximaThread() {
-	printf("Buscando proxima thread\n");
 	TCB_t *proxima_thread;
 	int sucesso;
 
 	proxima_thread = retornaApto();
 	
 	if (proxima_thread == NULL) {
-		printf("Nao ha mais threads em apto\n");
+		printf("Erro: nao ha mais threads em apto\n");
 		return;
 	}
 
@@ -575,8 +512,6 @@ void proximaThread() {
 	// e a insere em execucao
 	sucesso = insereEmExecutando(proxima_thread);
 
-	printf("Executando proxima thread %d\n", proxima_thread->tid);
-
 	// executa a proxima thread "setando" seu contexto
 	if (sucesso == 0)
 		setcontext(&proxima_thread->context);
@@ -585,8 +520,10 @@ void proximaThread() {
 // --------------------------------------------------------------------------------------------------- //
 
 int sincronizaTermino(int tid) {
+	TCB_t *thread_exec;
 	TCB_t *thread_bloq;
-	
+	int sucesso;
+
 	// remove thread do bloqueado
 	thread_bloq = retornaBloqueado(tid);
 	if (thread_bloq == NULL) {
@@ -594,11 +531,20 @@ int sincronizaTermino(int tid) {
 		return -1;
 	}
 	removeDeBloqueado(thread_bloq);
+
+	thread_exec = retornaExecutando();
+	if (thread_exec == NULL) {
+		printf("Erro: nao ha thread em execucao\n");
+	}
+	removeDeThreadsEsperadas(thread_exec->tid);
 	
 	// insere em apto
 	insereEmApto(thread_bloq);
 
-	proximaThread();
+	sucesso = finalizaThread();
+	if (sucesso == 0)
+		proximaThread();
+	
 	return 0;
 }
 
