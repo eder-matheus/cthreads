@@ -271,7 +271,7 @@ int cwait(csem_t *sem) {
 // --------------------------------------------------------------------------------------------------- //
 
 int csignal(csem_t *sem) {
-	int tid_desbl;
+	int *tid_desbl;
 	TCB_t *thread_desbl;
 	int ret_log = 0;
 
@@ -279,8 +279,8 @@ int csignal(csem_t *sem) {
 	if(sem->count <= 0) {
 		printf("Semaforo aberto\n");
 		FirstFila2(sem->fila);
-		tid_desbl = (int) GetAtIteratorFila2(sem->fila);
-		thread_desbl = retornaBloqueado(tid_desbl);
+		tid_desbl = GetAtIteratorFila2(sem->fila);
+		thread_desbl = retornaBloqueado(*tid_desbl);
 		
 		if(thread_desbl == NULL) {
 			printf("Nenhuma thread esperara pelo csignal\n");
@@ -300,6 +300,7 @@ int csignal(csem_t *sem) {
 // --------------------------------------------------------------------------------------------------- //
 
 int cidentify (char *name, int size) {
+	size = 60;
 	strncpy (name, "Eder Matheus Rodrigues Monteiro e Guilherme Girotto Sartori\0", size);
 	return 0;
 }
