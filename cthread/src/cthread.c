@@ -1,14 +1,8 @@
-#include "support.h"
-#include "cthread.h"
-#include "cdata.h"
+#include "../include/support.h"
+#include "../include/cthread.h"
+#include "../include/cdata.h"
 #include "ucontext.h"
-#include "escalonador.h"
-#include	<stdio.h>
-#include	<stdlib.h>
-#include 	<math.h>
-
-#define		MAX_SIZE	250
-#define		MAX_THR		10
+#include "../include/escalonador.h"
 
 int __tid = 1;
 
@@ -145,20 +139,18 @@ int cyield(void) {
 	}
 	removeDeExecutando();
 
+	// Insere em apto a thread que foi retirada de execucao
+	insereEmApto(thread_atual);
+
 	// Busca a proxima thread apta e a retira da fila de aptos
 	thread_apta = retornaApto();
 	removeDeApto();
 
-	// Insere em apto a thread que foi retirada de execucao
-	insereEmApto(thread_atual);
-
-	// Se nao tem thread em apto, retorna a thread que chamou cyield e a executa de novo
-	if (thread_apta == NULL) {
-		thread_apta = retornaApto();
-		removeDeApto();
-	}
-
+	// Insere em execucao a proxima thread apta
 	sucesso = insereEmExecutando(thread_apta);
+
+	// printf(">>> Em cyield: remove thread %d de exec\n", thread_atual->tid);
+	// printf(">>> Em cyield: insere thread %d em exec\n", thread_apta->tid);
 
 	if (swapcontext(&thread_atual->context, &thread_apta->context) == -1) {
 		printf("Erro ao trocar os contextos em cyield\n");
@@ -199,7 +191,7 @@ int cjoin(int tid) {
 	// Modifica contexto da thread esperada para sincronizar seu termino
 	thread_esperada = buscaThread(tid, &erro, &emApto);
 	if (thread_esperada == NULL) {
-		printf("Thread de tid %d nao encontrada!\n", tid);
+		printf("Erro: thread de tid %d nao encontrada!\n", tid);
 		return -1;
 	}
 
@@ -231,19 +223,78 @@ int cjoin(int tid) {
 // --------------------------------------------------------------------------------------------------- //
 
 int csem_init(csem_t *sem, int count) {
-	return -1;
+	printf("Inicializando semáforo\n");
+	int ret_log;
+
+	sem->count = count;
+	sem->fila = (PFILA2 ) malloc(sizeof(PFILA2));
+
+	if(CreateFila2(sem->fila) == 0 && sem->count == count)
+		ret_log = 0;	
+	else ret_log = -1;
+	
+	return ret_log;
 }
 
 // --------------------------------------------------------------------------------------------------- //
 
 int cwait(csem_t *sem) {
-	return -1;
+	TCB_t *thread_atual;
+	TCB_t *thread_apta;
+	int ret_log = 0;
+
+	sem->count -= 1;
+	if(sem->count < 0) {
+		printf("recurso indisponível, thread será bloquada!\n");
+		thread_atual = retornaExecutando();
+		removeDeExecutando();
+		AppendFila2(sem->fila, &thread_atual->tid);
+		thread_apta = retornaApto();
+		if(thread_apta == NULL) {
+			printf("Nenhuma thread apta para a execução!\n");
+			insereEmExecutando(thread_atual);
+		}
+		removeDeApto();
+		insereEmBloqueado(thread_atual);
+		insereEmExecutando(thread_apta);
+		
+		if (swapcontext(&thread_atual->context, &thread_apta->context) == -1) {
+			printf("Erro ao trocar os contextos em cwait\n");
+		}
+		ret_log = -1;
+	}
+
+
+	return ret_log;
 }
 
 // --------------------------------------------------------------------------------------------------- //
 
 int csignal(csem_t *sem) {
-	return -1;
+	int tid_desbl;
+	TCB_t *thread_desbl;
+	int ret_log = 0;
+
+	sem->count += 1;
+	if(sem->count <= 0) {
+		printf("Semaforo aberto\n");
+		FirstFila2(sem->fila);
+		tid_desbl = (int) GetAtIteratorFila2(sem->fila);
+		thread_desbl = retornaBloqueado(tid_desbl);
+		
+		if(thread_desbl == NULL) {
+			printf("Nenhuma thread esperara pelo csignal\n");
+			ret_log = -1;
+		}
+		
+		else {
+			DeleteAtIteratorFila2(sem->fila);
+			removeDeBloqueado(thread_desbl);
+			escalonaThread(thread_desbl);
+		}
+	}
+
+	return ret_log;
 }
 
 // --------------------------------------------------------------------------------------------------- //
@@ -254,78 +305,3 @@ int cidentify (char *name, int size) {
 }
 
 // --------------------------------------------------------------------------------------------------- //
-
-static void* func5(void) {
-	printf("-----func5: started ->\n");
-	printf("-----func5: cjoin\n");
-	cjoin(1);
-	printf("-----f5: finishing\n");
-	printf("-----func5: returning\n");
-}
-
-static void* func4(void) {
-	printf("----func4: started ->\n");
-	printf("----func4: set prio\n");
-	csetprio(4, 0);
-	printf("----f4: finishing\n");
-	printf("----func4: returning\n");
-}
-
-static void* func3(void) {
-	printf("---func3: started ->\n");
-	printf("---func3: set prio\n");
-	csetprio(3,2);
-	printf("---f3: finishing\n");
-	printf("---func3: returning\n");
-}
-
-static void* func2(void) {
-	printf("--func2: started ->\n");
-	printf("--func2: cyield\n");
-	cyield();
-	printf("--f2: finishing\n");
-	printf("--func2: returning\n");
-}
-
-
-static void* func1(void *i) {
-	int erro;
-	printf("-func1: started\n");
-	printf("Param %d\n", i);
-	i++;
-	printf("-func1: blocked waiting for f2\n");
-	//erro = csetprio(1, 2);
-	int tid2 = ccreate(&func2, (void*)&i, 1);
-	int tid3 = ccreate(&func3, (void*)&i, 0);
-	int tid4 = ccreate(&func4, (void*)&i, 2);
-	int tid5 = ccreate(&func5, (void*)&i, 0);
-	cjoin(tid2);
-	printf("Param %d\n", i);
-	printf("-f1: return to f1\n");
-	printf("-func1: returning\n");
-	return;
-}
-
-int main () {
-	char name[60];
-
-	cidentify(name, 60);
-	printf("%s\n", name);
-
-	int i = 10;
-
-	printf("Iniciando main\n");
-	printf("cyield na main\n");
-	cyield();
-	printf("Retorna da cyield\n");
-
-	printf("Cria t1\n");
-	int tid = ccreate(&func1, (void*)i, 0);
-	printf("Thread %d criada\n", tid);
-	printf("Retorna para main: bloqueando main após crirar thread 1\n");
-	printf("main: cjoin\n");
-	cjoin(4);
-
-	printf("Main terminou!\n");
-	return 0;
-}

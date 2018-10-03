@@ -1,5 +1,5 @@
-#include "escalonador.h"
-#include "support.h"
+#include "../include/escalonador.h"
+#include "../include/support.h"
 
 _Bool __filas_inicializadas = 0;
 _Bool __tcb_main_inicializado = 0;

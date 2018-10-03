@@ -11,36 +11,23 @@
 # 
 
 CC=gcc
-LINKER=ld
-OBJ = cthread.o
 LIB_DIR=./lib
-INC_DIR= -I ./include
-BIN_DIR=$(wildcard ./bin/*.o)
-THR_DIR=$(wildcard ./src/cthread.c)
-SCA_DIR=$(wildcard ./src/escalonador.c)
-SCA_OBJ=$(patsubst %.c,%.o,$(SCA_DIR))
-THR_OBJ=$(patsubst %.c,%.o,$(THR_DIR))
+INC_DIR=./include
+BIN_DIR=./bin
+SRC_DIR=./src
 
 #all: clean $(SCA_OBJ) $(THR_OBJ) $(OBJ)
-all: clean regra1
+all: cthread libcthread
 
-regra1: #dependências para a regra1
-	$(CC) -Wall -m32 $(SCA_DIR) $(THR_DIR) $(INC_DIR) $(BIN_DIR) -o $(OBJ)
+cthread: 
+	$(CC) -Wall -m32 -c $(SRC_DIR)/cthread.c -o $(BIN_DIR)/cthread.o
+	$(CC) -Wall -m32 -c $(SRC_DIR)/escalonador.c -o $(BIN_DIR)/escalonador.o
 
-#$(OBJ): $(SCA_OBJ) $(THR_OBJ) #dependências para a regra1
-#	$(LINKER) -o $(INC_DIR) $(BIN_DIR) $@ $^ -Wall -m32
-
-./src/cthread.o: ./src/cthread.c #dependências para a regra2
-	$(CC) -Wall -m32 $(INC_DIR) $(BIN_DIR) -o $@ $<
-
-./src/escalonador.o: ./src/escalonador.c #dependências para a regra2
-	$(CC) -Wall -m32 $(INC_DIR) $(BIN_DIR) -o $@ $<
-
-
-#regran: #dependências para a regran
-#	$(CC) -o $(BIN_DIR)/regran $(SRC_DIR)/regran.c -Wall -m32
+libcthread: 
+	ar crs $(LIB_DIR)/libcthread.a $(BIN_DIR)/cthread.o $(BIN_DIR)/escalonador.o $(BIN_DIR)/support.o
 
 clean:
-	rm -rf $(LIB_DIR)/*.a ./src/*.o
+	find $(BIN_DIR)/*.o ! -name 'support.o' -type f -exec rm -f {} +
+	rm -rf $(LIB_DIR)/*.a $(SRC_DIR)/*~ $(INC_DIR)/*~ *~
 
 
