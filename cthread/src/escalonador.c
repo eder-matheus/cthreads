@@ -550,18 +550,33 @@ int sincronizaTermino(int tid) {
 
 // --------------------------------------------------------------------------------------------------- //
 
+TCB_t* buscaMaiorPrioridade(PFILA2 fila) {
+	int i;
+	int it_priori;
+	int maior_prio = 3;
+	int it_counter = 0;
+	int estado_iterador;
+	TCB_t *thread_desbl;
 
+	estado_iterador = FirstFila2(fila);
+		while (estado_iterador == 0) {
+			thread_desbl = GetAtIteratorFila2(fila);
+			if (thread_desbl->prio < maior_prio) {
+				maior_prio = thread_desbl->prio;
+				it_priori = it_counter;
+			}
+			estado_iterador = NextFila2(fila);
+			it_counter++;
+		}
 
+		FirstFila2(fila);
+		for(i = 0; i < it_priori; i++) {
+			NextFila2(fila);
+		}
 
+		thread_desbl = GetAtIteratorFila2(fila);
 
+		return thread_desbl;
+}
 
-
-
-
-
-
-
-
-
-
-
+// --------------------------------------------------------------------------------------------------- //

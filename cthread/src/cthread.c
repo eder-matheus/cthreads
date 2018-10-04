@@ -248,7 +248,7 @@ int cwait(csem_t *sem) {
 		printf("recurso indisponível, thread será bloquada!\n");
 		thread_atual = retornaExecutando();
 		removeDeExecutando();
-		AppendFila2(sem->fila, &thread_atual->tid);
+		AppendFila2(sem->fila, thread_atual);
 		thread_apta = retornaApto();
 		if(thread_apta == NULL) {
 			printf("Nenhuma thread apta para a execução!\n");
@@ -271,19 +271,17 @@ int cwait(csem_t *sem) {
 // --------------------------------------------------------------------------------------------------- //
 
 int csignal(csem_t *sem) {
-	int *tid_desbl;
 	TCB_t *thread_desbl;
 	int ret_log = 0;
 
 	sem->count += 1;
 	if(sem->count <= 0) {
 		printf("Semaforo aberto\n");
-		FirstFila2(sem->fila);
-		tid_desbl = GetAtIteratorFila2(sem->fila);
-		thread_desbl = retornaBloqueado(*tid_desbl);
+
+		thread_desbl = buscaMaiorPrioridade(sem->fila);
 		
 		if(thread_desbl == NULL) {
-			printf("Nenhuma thread esperara pelo csignal\n");
+			printf("Nenhuma thread esperava pelo csignal\n");
 			ret_log = -1;
 		}
 		

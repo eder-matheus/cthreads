@@ -59,3 +59,5 @@ int finalizaThread();
 void proximaThread();
 
 int sincronizaTermino(int tid);
+
+TCB_t* buscaMaiorPrioridade(PFILA2 fila);
