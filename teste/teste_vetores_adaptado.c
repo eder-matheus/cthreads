@@ -35,8 +35,8 @@ void *func(void *arg){
 
 int main(int argc, char *argv[]) {
     int i, pid[MAX_THR];
-    csetprio(0, 0);
-  
+    csetprio(0, 2);
+ 
     for (i = 0; i < MAX_THR; i++) {
         pid[i] = ccreate(func, (void *)('A'+i), 1);
        if ( pid[i] == -1) {
@@ -44,6 +44,10 @@ int main(int argc, char *argv[]) {
           exit(-1);
        }
      }
+
+    printf("cyield main\n");
+    cyield();
+    printf("retorna pra main\n");
 
     for (i = 0; i < MAX_THR; i++){
       	 cjoin(pid[i]);

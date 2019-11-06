@@ -443,7 +443,8 @@ int escalonaThread(TCB_t *thread) {
 
 	if (threadExec != NULL) { // existe thread em execucao
 		// printf("Inserindo em exec");
-		if (thread->prio < threadExec->prio) { // se a thread em execucao tiver prioridade menor do que a criada
+		if (threadExec->prio < thread->prio) { // se a thread em execucao tiver prioridade menor do que a criada
+			printf("Retirando thread de exec. Prio exec: %d; Prio newTh: %d\n", threadExec->prio, thread->prio);
 			removeDeExecutando();
 			insereEmExecutando(thread); // insere a nova thread em execucao
 			insereEmApto(threadExec); // insere a antiga no apto
